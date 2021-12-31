@@ -34,7 +34,7 @@ x = temp_data[, "sex", drop=F] #dont need years because time-homogeneous
 t = temp_data[,"years"]
 steps = 20000
 burnin = 5000
-n_cores = 8
+n_cores = 16
 
 s_time = Sys.time()
 
