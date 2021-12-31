@@ -203,17 +203,7 @@ cavData <- cavData[,c('ptnum','years','iyears','sex','state')]
 
 colnames(cavData) <- c('ptnum','years','iyears','sex','state')
 
-meanYears <- round( mean(cavData$years), 0)
-# Save the mean years to be able to compute to true intercept value ( beta_0 + beta_1 * mean ).
-save(meanYears,file=paste0(Dir,'meanYears',seedInd,'.rda'))
-
-cavData$iyears <- cavData$iyears - meanYears
-cavData$years <- cavData$years - meanYears
-
 rownames(cavData) <- NULL
-
-# Save the sample size becaue it will vary for a population study.
-save(N,file=paste0(Dir,'sampleSize',seedInd,'.rda'))
 
 save(cavData,file=paste0(Dir,'cavData',seedInd,'.rda'))
 
