@@ -11,14 +11,6 @@ trueValues <- c(c(matrix(c(-2.54, -0.56,
                 c(  -4.59512, -1.15268, -2.751535, -2.090741),
                 c( -3.178054, -4.59512))
 
-# Add this second row when doing time-inhomogeneous
-# 0.11
-# -0.24
-# -0.15
-# 0.23
-# 0.08
-
-
 
 init_par = trueValues
 # init_par = c(c(matrix(c(-2, 0,
@@ -38,9 +30,9 @@ load(paste0("Data/cavData", ind, ".rda"))
 temp_data = as.matrix(cavData); rownames(temp_data) = NULL
 id = temp_data[,"ptnum"]
 y = temp_data[,"state"]
-x = temp_data[, 4, drop=F] #dont need years because time-homogeneous
+x = temp_data[, "sex", drop=F] #dont need years because time-homogeneous
 t = temp_data[,"years"]
-steps = 10000
+steps = 20000
 burnin = 5000
 n_cores = 8
 
@@ -51,4 +43,4 @@ mcmc_out = mcmc_routine(y, x, t, id, init_par, prior_par, par_index,
 
 e_time = Sys.time() - s_time; print(e_time)
 
-save(mcmc_out, file = paste0("MCMC_local/mcmc_out_", ind, ".rda"))
+save(mcmc_out, file = paste0("Model_out/expm/mcmc_out_", ind, ".rda"))

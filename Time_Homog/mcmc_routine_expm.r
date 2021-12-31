@@ -22,7 +22,6 @@ package.install("mvtnorm")
 package.install("foreach")
 package.install("doParallel")
 package.install("msm")
-package.install("deSolve")
 package.install("expm")
 package.install("foreach")
 package.install("doParallel")
@@ -31,9 +30,7 @@ package.install("doParallel")
 # library(mvtnorm, quietly=T)
 # library(foreach, quietly=T)
 # library(doParallel, quietly=T)
-#
 # library("msm")
-# library("deSolve")
 # library("expm")
 # library("foreach")
 # library("doParallel")
@@ -56,32 +53,6 @@ Q <- function(x_ik,beta){
   return(qmat)
 }
 
-model_t <- function(t,p,b) {
-
-  betaMat <- matrix(b, ncol = 2, byrow = F)
-
-  q1  = exp( c(1,1) %*% betaMat[1,] )  # Transition from state 1 to state 2.   c(1,floor(t),1)
-  q2  = exp( c(1,1) %*% betaMat[2,] )  # Transition from state 2 to state 3.   c(1,floor(t),1)
-  q3  = exp( c(1,1) %*% betaMat[3,] )  # Transition from state 1 to death.     c(1,floor(t),1)
-  q4  = exp( c(1,1) %*% betaMat[4,] )  # Transition from state 2 to death.     c(1,floor(t),1)
-  q5  = exp( c(1,1) %*% betaMat[5,] )  # Transition from state 3 to death.     c(1,floor(t),1)
-
-  dP = rep(1,9) # this is the vector with all diffEqs
-
-  dP[1] = p[1]*(-q1-q2)
-  dP[2] = p[1]*q1 + p[2]*(-q3-q4)
-  dP[3] = p[2]*q3 - p[3]*q5
-  dP[4] = p[1]*q2 + p[2]*q4 + p[3]*q5
-  dP[5] = p[5]*(-q3-q4)
-  dP[6] = p[5]*q3 - p[6]*q5
-  dP[7] = p[5]*q4 + p[6]*q5
-  dP[8] = -p[8]*q5
-  dP[9] = p[8]*q5
-
-  return(list(dP))
-
-}
-
 fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 
   init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]), 0)
@@ -96,12 +67,12 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
-  log_total_val = foreach(i=unique(id)[1:1000], .combine='+', .export = c("model_t", "Q"), .packages = "expm") %dopar% {
+  log_total_val = foreach(i=unique(id), .combine='+', .export = "Q", .packages = "expm") %dopar% {
 
     y_i = y[id == i]
     x_i = x[id == i,,drop = F]
     t_i = t[id == i]
-    Q_i = Q(x_i[1,], beta) # x_i is a 2D vector in time inhomogeneous
+    Q_i = Q(x_i[1,], beta) # x_i is a 2 dimensional vector in time inhomogeneous
 
     f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
@@ -146,8 +117,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  group = list(par_index$beta, c(par_index$misclass, par_index$pi_logit))
-  #group = list(c(1,2))
+  group = list(c(par_index$beta, par_index$misclass, par_index$pi_logit))
   n_group = length(group)
 
   pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))
@@ -173,6 +143,8 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
+      # print("Likelihood Evaluation:")
+      # print(log_post)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -192,7 +164,9 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
         accept[j] = accept[j] +1
       }
       chain[ttt,ind_j] = pars[ind_j]
-
+      # print("Parameters Accepted")
+      # print(pars)
+      
       # Proposal tuning scheme ------------------------------------------------
       if(ttt < burnin){
         # During the burnin period, update the proposal covariance in each step

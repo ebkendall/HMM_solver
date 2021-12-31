@@ -1,7 +1,6 @@
 source("mcmc_routine_deSolve.r")
 
-#ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-ind = 12
+ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(ind)
 
 trueValues <- c(c(matrix(c(-2.54, -0.56,
@@ -11,16 +10,6 @@ trueValues <- c(c(matrix(c(-2.54, -0.56,
                            -2.12,  1.17), ncol=2, byrow=T)),
                 c(  -4.59512, -1.15268, -2.751535, -2.090741),
                 c( -3.178054, -4.59512))
-
-# entry -1.50 used to be -3.92
-
-# Add this second row when doing time-inhomogeneous
-# 0*0.11,
-# 0*-0.24,
-# 0*-0.15,
-# 0*0.23,
-# 0*0.08,
-
 
 
 init_par = trueValues
@@ -41,9 +30,9 @@ load(paste0("Data/cavData", ind, ".rda"))
 temp_data = as.matrix(cavData); rownames(temp_data) = NULL
 id = temp_data[,"ptnum"]
 y = temp_data[,"state"]
-x = temp_data[, 4, drop=F] #dont need years because time-homogeneous
+x = temp_data[, "sex", drop=F] #dont need years because time-homogeneous
 t = temp_data[,"years"]
-steps = 10000
+steps = 20000
 burnin = 5000
 n_cores = 8
 
@@ -54,4 +43,4 @@ mcmc_out = mcmc_routine(y, x, t, id, init_par, prior_par, par_index,
 
 e_time = Sys.time() - s_time; print(e_time)
 
-save(mcmc_out, file = paste0("MCMC_local/mcmc_out_", ind, ".rda"))
+save(mcmc_out, file = paste0("Model_out/deSolve/mcmc_out_", ind, ".rda"))
