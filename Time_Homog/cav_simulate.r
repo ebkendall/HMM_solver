@@ -99,6 +99,7 @@ propDeaths <- propDeaths / N_cav
 
 Q <- function(iyears,sex,betaMat){
 
+    # NOTE: betaMat has a 0 in the 2nd column so the iyears is irrelevant here
 	q1  = exp( c(1,iyears,sex) %*% betaMat[1,] )  # Transition from state 1 to state 2.
 	q2  = exp( c(1,iyears,sex) %*% betaMat[2,] )  # Transition from state 2 to state 3.
 	q3  = exp( c(1,iyears,sex) %*% betaMat[3,] )  # Transition from state 1 to death.
