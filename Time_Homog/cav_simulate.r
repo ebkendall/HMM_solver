@@ -30,11 +30,11 @@ dt <- 1/365
 
 
 # The years and iyears columns were both centered at round(mean(years),0) = 4 in the cav data set.  These are the true parameter values for the uncentered data ( intercept - coef*mean ).
-trueValues <- c(c(matrix(c(-2.54, 0*0.11, -0.56,
-                           -2.94, 0*-0.24,  0.15,
-                           -1.10, 0*-0.15, -0.03,
-                           -3.92, 0*0.23,  0.21,
-                           -2.12, 0*0.08,  1.17), ncol=3, byrow=T)),
+trueValues <- c(c(matrix(c(-2.54, 0, -0.56,
+                           -2.94, 0,  0.15,
+                           -1.10, 0, -0.03,
+                           -3.92, 0,  0.21,
+                           -2.12, 0,  1.17), ncol=3, byrow=T)),
                 c(  -4.59512, -1.15268, -2.751535, -2.090741),
                 c( -3.178054, -4.59512))
 
