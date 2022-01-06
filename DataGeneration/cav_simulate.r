@@ -1,23 +1,23 @@
 ##############################
 #### LOADING LIB AND DATA ####
 ##############################
-package.install = function(pack) {
-  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-
-  # name of package to install / load
-  pack = pack
-
-  if (pack %in% rownames(installed.packages())) {
-    library(pack, character.only=T)
-  } else {
-    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    } else {
-      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    }
-  }
-}
+# package.install = function(pack) {
+#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+#
+#   # name of package to install / load
+#   pack = pack
+#
+#   if (pack %in% rownames(installed.packages())) {
+#     library(pack, character.only=T)
+#   } else {
+#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+#     } else {
+#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+#     }
+#   }
+# }
 
 floor_new <- function(t,p) {
     new_time = 0
@@ -57,9 +57,12 @@ censor_times <- function(t, p) {
   return(new_time)
 }
 
-package.install("msm")
+# package.install("msm")
+library(msm)
 
-num_iter = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+#num_iter = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+num_iter = 420
+
 # p = 1 --> update every day
 # p = 2 --> update every month
 # p = 3 --> update every year
@@ -70,7 +73,7 @@ folder_name = c("Continuous", "Month", "Year", "YearTwo")
 
 
 # Set the sample size.  Note that the cav data set has 622 subjects.
-N <- 2000
+N <- 20
 # Choose the discretization of time.
 dt <- 1/365
 
@@ -262,7 +265,7 @@ for(p in 1:4) {
 
     tempRow <- rep(0,ncol(hold))
     names(tempRow) <- c('ptnum','years','disc_time','sex','state','obstrue')
-
+	
     num <- 1
     cavData <- NULL
     for(i in unique(rawData$ptnum)){
@@ -280,6 +283,7 @@ for(p in 1:4) {
         # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
         if(t %in% subject$years){
           current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
+          print(paste0(t, ": Start observed"))
         } else{
 
           # Create a CENSORED row for each subject at each discritezed time.
@@ -291,9 +295,10 @@ for(p in 1:4) {
           tempRow['obstrue'] <- 1
 
           current <- rbind( current, tempRow)
+          print(paste0(t, ": Censoring"))
 
           # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
-          if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]) }
+          if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
         }
 
       }
