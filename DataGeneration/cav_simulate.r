@@ -269,7 +269,7 @@ for(p in 1:4) {
     
     current <- NULL
     subject <- hold[hold$ptnum==i,,drop=FALSE]
-    
+    subject[2,] = c(1,0.04,0,0,1,0)
     #------------------------------------
     
     censoredAges <- censor_times(subject$years, p)
@@ -280,26 +280,26 @@ for(p in 1:4) {
                           'sex' = rep(subject$sex[1], length(censoredAges)),
                           'state' = rep(99, length(censoredAges)),
                           'obstrue' = rep(1, length(censoredAges)))
-    for (k in 1:nrow(subject)) {
-      print(subject[k,])
-      obs1 = sum(subject$years[k] == current$disc_time)
+    
+    for (k in unique(subject$disc_time)) {
+      mainInd = min(which(subject$disc_time == k))
+      obs1 = sum(subject$years[mainInd] == current$disc_time)
       if (obs1 == 1) {
-        myInd = which(current$disc_time == subject$years[k])
-        current[myInd,] = subject[k,]
+        myInd = which(current$disc_time == subject$years[mainInd])
+        current[myInd,] = subject[mainInd,]
       } else {
-        if(k == nrow(subject)) {
-          current = rbind(current, subject[k, ])
+        if(max(which(subject$disc_time == k)) == nrow(subject)) {
+          current = rbind(current, subject[which(subject$disc_time == k), ])
         } else {
-          myInd = max(which(current$disc_time < subject$years[k]))
+          myInd = max(which(current$disc_time < subject$years[mainInd]))
           
           startInd = myInd + 1
           currLength = nrow(current)
           
-          current = rbind(current[1:myInd, ], subject[k, ], current[startInd:currLength, ])
+          current = rbind(current[1:myInd, ], subject[which(subject$disc_time == k), ], current[startInd:currLength, ])
         }
       }
     }
-    
     
     #------------------------------------
     
