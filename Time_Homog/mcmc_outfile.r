@@ -60,6 +60,47 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'P( init S2 )','P( init S3 )')
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Calculating Credible Sets ---------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+cred_set = vector(mode = 'list', length = length(true_par))
+for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
+                                                        'upper' = c(-1))
+ind = 0
+
+for (i in 1:100) {
+    file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
+    if(file.exists(file_name)){
+	    load(file_name) # changed toString to 3
+        ind = ind + 1
+
+        for(j in 1:length(true_par)) {
+            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                        prob=.025), 4)
+            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                        prob=.975), 4)
+        }
+  }
+}
+
+save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
+
+# -----------------------------------------------------------------------------
+# Calculating Coverage --------------------------------------------------------
+# -----------------------------------------------------------------------------
+cov_df <- c()
+for(i in 1:length(true_par)) {
+    val = true_par[i]
+    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
+    bot = nrow(cred_set[[i]])
+    covrg = top/bot
+    cov_df[i] = covrg
+    print(paste0("Coverage for parameter ", val, " is: ", covrg))
+}
+
+# -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
@@ -111,8 +152,8 @@ for(r in 1:length(labels)){
     geom_violin(trim=FALSE) +
     geom_boxplot(width=0.1) +
     ggtitle(labels[r]) +
-    ylab('') +
-    xlab(paste0("Parameter Value: ", true_par[r])) +
+    ylab(paste0("Parameter Value: ", true_par[r])) +
+    xlab(paste0("Coverage is: ", cov_df[r])) +
     geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
     theme(text = element_text(size = 7))
   #boxplot(post_means[,r], main=labels[r], ylab=NA, xlab = true_par[r])
@@ -124,41 +165,3 @@ grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
 grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]],
              VP[[14]], VP[[15]], VP[[16]], ncol=3, nrow =3)
 dev.off()
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Calculating Credible Sets ---------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-cred_set = vector(mode = 'list', length = length(true_par))
-for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
-                                                        'upper' = c(-1))
-ind = 0
-
-for (i in 1:100) {
-    file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
-    if(file.exists(file_name)){
-	    load(file_name) # changed toString to 3
-        ind = ind + 1
-
-        for(j in 1:length(true_par)) {
-            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.025), 4)
-            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.975), 4)
-        }
-  }
-}
-
-save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
-
-# -----------------------------------------------------------------------------
-# Calculating Coverage --------------------------------------------------------
-# -----------------------------------------------------------------------------
-for(i in 1:length(true_par)) {
-    val = true_par[i]
-    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
-    bot = nrow(cred_set[[i]])
-    covrg = top/bot
-    print(paste0("Coverage for parameter ", val, " is: ", covrg))
-}

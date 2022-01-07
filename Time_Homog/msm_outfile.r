@@ -6,26 +6,26 @@ for(p in requiredPackages){
 
 nFrames = 50
 
-labels <- c('baseline State 1 (well)   --->   State 2 (mild)',
-            'baseline State 1 (well)   --->   State 4 (dead)',
-            'baseline State 2 (mild)   --->   State 3 (severe)',
-            'baseline State 2 (mild)   --->   State 4 (dead)',
-            'baseline State 3 (severe)   --->   State 4 (dead)',
+labels <- c('b.l. S1 (well)   --->   S2 (mild)',
+            'b.l. S1 (well)   --->   S4 (dead)',
+            'b.l. S2 (mild)   --->   S3 (severe)',
+            'b.l. S2 (mild)   --->   S4 (dead)',
+            'b.l. S3 (severe)   --->   S4 (dead)',
             # 'iyears State 1 (well)   --->   State 2 (mild)',
             # 'iyears State 1 (well)   --->   State 4 (dead)',
             # 'iyears State 2 (mild)   --->   State 3 (severe)',
             # 'iyears State 2 (mild)   --->   State 4 (dead)',
             # 'iyears State 3 (severe)   --->   State 4 (dead)',
-            'sex State 1 (well)   --->   State 2 (mild)',
-            'sex State 1 (well)   --->   State 4 (dead)',
-            'sex State 2 (mild)   --->   State 3 (severe)',
-            'sex State 2 (mild)   --->   State 4 (dead)',
-            'sex State 3 (severe)   --->   State 4 (dead)',
-            'P( observed state 2 | true state 1 )',
-            'P( observed state 1 | true state 2 )',
-            'P( observed state 3 | true state 2 )',
-            'P( observed state 2 | true state 3 )',
-            'P( initial state 2 )','P( initial state 3 )')
+            'sex S1 (well)   --->   S2 (mild)',
+            'sex S1 (well)   --->   S4 (dead)',
+            'sex S2 (mild)   --->   S3 (severe)',
+            'sex S2 (mild)   --->   S4 (dead)',
+            'sex S3 (severe)   --->   S4 (dead)',
+            'P( obs. S2 | true S1 )',
+            'P( obs. S1 | true S2 )',
+            'P( obs. S3 | true S2 )',
+            'P( obs. S2 | true S3 )',
+            'P( init S2 )','P( init S3 )')
 
 
 day_data = matrix(data=-1, nrow = nFrames, ncol = 16)
@@ -67,8 +67,8 @@ for(i in 1:length(trueValues)) {
       geom_violin(trim=FALSE) +
       geom_boxplot(width=0.1) +
       ggtitle(labels[i]) +
-      ylab('') +
-      xlab(trueValues[i]) +
+      ylab(paste0("Parameter Value: ", trueValues[i])) +
+      xlab('') +
       geom_hline(yintercept=trueValues[i], linetype="dashed", color = "red") +
       theme(text = element_text(size = 7))
 
