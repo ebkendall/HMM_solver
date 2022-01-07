@@ -256,58 +256,58 @@ for(i in 1:nrow(rawData)){	rawData$state[i] <- sample(1:4, size=1, prob=errorMat
 # p = 4: two year censor
 for(p in 1:4) {
 	
-    disc_time <- sapply(rawData$years, floor_new, p = p)
-
-    obstrue <- rep(0,nrow(rawData))
-
-    hold <- cbind(rawData,obstrue,disc_time)
-    hold <- hold[,c('ptnum','years','disc_time','sex','state','obstrue')]
-
-    tempRow <- rep(0,ncol(hold))
-    names(tempRow) <- c('ptnum','years','disc_time','sex','state','obstrue')
-	
-    num <- 1
-    cavData <- NULL
-    for(i in unique(rawData$ptnum)){
-
-      current <- NULL
-      subject <- hold[hold$ptnum==i,,drop=FALSE]
-
-      #------------------------------------
-      # censoredAges <- unique( c( min(subject$age), ceiling(min(subject$age)):max(subject$age)) )
-
-      censoredAges <- censor_times(subject$years, p)
-
-      for(t in censoredAges ){
-
-        # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
-        if(t %in% subject$years){
-          current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
-          print(paste0(t, ": Start observed"))
-        } else{
-
-          # Create a CENSORED row for each subject at each discritezed time.
-          tempRow['ptnum'] <- i
-          tempRow['years'] <- t
-          tempRow['disc_time'] <- t
-          tempRow['sex'] <- subject$sex[1]
-          tempRow['state'] <- 99
-          tempRow['obstrue'] <- 1
-
-          current <- rbind( current, tempRow)
-          print(paste0(t, ": Censoring"))
-
-          # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
-          if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
+  disc_time <- sapply(rawData$years, floor_new, p = p)
+  
+  obstrue <- rep(0,nrow(rawData))
+  
+  hold <- cbind(rawData,obstrue,disc_time)
+  hold <- hold[,c('ptnum','years','disc_time','sex','state','obstrue')]
+  
+  num <- 1
+  cavData <- NULL
+  for(i in unique(rawData$ptnum)){
+    
+    current <- NULL
+    subject <- hold[hold$ptnum==i,,drop=FALSE]
+    
+    #------------------------------------
+    
+    censoredAges <- censor_times(subject$years, p)
+    
+    current <- data.frame('ptnum' = rep(i, length(censoredAges)),
+                          'years' = censoredAges,
+                          'disc_time' = censoredAges,
+                          'sex' = rep(subject$sex[1], length(censoredAges)),
+                          'state' = rep(99, length(censoredAges)),
+                          'obstrue' = rep(1, length(censoredAges)))
+    for (k in 1:nrow(subject)) {
+      print(subject[k,])
+      obs1 = sum(subject$years[k] == current$disc_time)
+      if (obs1 == 1) {
+        myInd = which(current$disc_time == subject$years[k])
+        current[myInd,] = subject[k,]
+      } else {
+        if(k == nrow(subject)) {
+          current = rbind(current, subject[k, ])
+        } else {
+          myInd = max(which(current$disc_time < subject$years[k]))
+          
+          startInd = myInd + 1
+          currLength = nrow(current)
+          
+          current = rbind(current[1:myInd, ], subject[k, ], current[startInd:currLength, ])
         }
-
       }
-      #------------------------------------
-
-      cavData <- rbind( cavData, current)
-      #print(num)
-      num <- num+1
     }
+    
+    
+    #------------------------------------
+    
+    cavData <- rbind( cavData, current)
+    #print(num)
+    num <- num+1
+  }
+  
     colnames(cavData) <- c('ptnum','years','disc_time','sex','state','obstrue')
 
     meanYears <- round( mean(cavData$years), 0) #should be rawData
