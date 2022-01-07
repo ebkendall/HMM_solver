@@ -281,24 +281,48 @@ for(p in 1:4) {
                           'state' = rep(99, length(censoredAges)),
                           'obstrue' = rep(1, length(censoredAges)))
     
-    for (k in unique(subject$disc_time)) {
-      mainInd = min(which(subject$disc_time == k))
-      obs1 = sum(subject$years[mainInd] == current$disc_time)
-      if (obs1 == 1) {
-        myInd = which(current$disc_time == subject$years[mainInd])
-        current[myInd,] = subject[mainInd,]
-      } else {
-        if(max(which(subject$disc_time == k)) == nrow(subject)) {
-          current = rbind(current, subject[which(subject$disc_time == k), ])
-        } else {
-          myInd = max(which(current$disc_time < subject$years[mainInd]))
-          
-          startInd = myInd + 1
-          currLength = nrow(current)
-          
-          current = rbind(current[1:myInd, ], subject[which(subject$disc_time == k), ], current[startInd:currLength, ])
-        }
+    # for (k in unique(subject$disc_time)) {
+    #   mainInd = min(which(subject$disc_time == k))
+    #   obs1 = sum(subject$years[mainInd] == current$disc_time)
+    #   if (obs1 == 1) {
+    #     myInd = which(current$disc_time == subject$years[mainInd])
+    #     current[myInd,] = subject[mainInd,]
+    #   } else {
+    #     if(max(which(subject$disc_time == k)) == nrow(subject)) {
+    #       current = rbind(current, subject[which(subject$disc_time == k), ])
+    #     } else {
+    #       myInd = max(which(current$disc_time < subject$years[mainInd]))
+    #       
+    #       startInd = myInd + 1
+    #       currLength = nrow(current)
+    #       
+    #       current = rbind(current[1:myInd, ], subject[which(subject$disc_time == k), ], current[startInd:currLength, ])
+    #     }
+    #   }
+    # }
+    
+    for(t in censoredAges ){
+      # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
+      if(t %in% subject$years){
+        current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
+        print(paste0(t, ": Start observed"))
+      } else{
+        
+        # Create a CENSORED row for each subject at each discritezed time.
+        tempRow['ptnum'] <- i
+        tempRow['years'] <- t
+        tempRow['disc_time'] <- t
+        tempRow['sex'] <- subject$sex[1]
+        tempRow['state'] <- 99
+        tempRow['obstrue'] <- 1
+        
+        current <- rbind( current, tempRow)
+        print(paste0(t, ": Censoring"))
+        
+        # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years)
+        if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
       }
+      
     }
     
     #------------------------------------
