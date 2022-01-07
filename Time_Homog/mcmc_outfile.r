@@ -150,7 +150,7 @@ for (i in 1:100) {
   }
 }
 
-save(cred_set, file = paste0('Plots/cred_set', model_name[folder], '.rda'))
+save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
 
 # -----------------------------------------------------------------------------
 # Calculating Coverage --------------------------------------------------------
