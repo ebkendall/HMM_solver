@@ -27,11 +27,11 @@ load(paste0("../DataGeneration/DataOut/Continuous/cavData", ind, ".rda"))
 temp_data = as.matrix(cavData); rownames(temp_data) = NULL
 id = temp_data[,"ptnum"]
 y = temp_data[,"state"]
-x = temp_data[, "sex", drop=F]
+x = temp_data[, c("years", "sex"), drop=F]
 t = temp_data[,"years"]
-steps = 10000
+steps = 20000
 burnin = 5000
-n_cores = 8
+n_cores = 16
 
 s_time = Sys.time()
 
@@ -40,4 +40,4 @@ mcmc_out = mcmc_routine(y, x, t, id, init_par, prior_par, par_index,
 
 e_time = Sys.time() - s_time; print(e_time)
 
-save(mcmc_out, file = paste0("MCMC-12-07-21/MCMC_info_1/mcmc_out_", ind, ".rda"))
+save(mcmc_out, file = paste0("Model_out/deSolve/mcmc_out_", ind, ".rda"))

@@ -96,19 +96,17 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
-  total_val = foreach(i=unique(id)[1:1000], .combine='+', .export = c("model_t", "Q"), .packages = "deSolve") %dopar% {
+  log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = "deSolve") %dopar% {
 
 	val = 1
 
 	y_i = y[id == i]
-  	# x_i = x[id == i,,drop = F]
     x_i = x[id == i,"sex",drop = F]
+    x_i_Q = x[id == i,,drop = F]
   	t_i = t[id == i]
-  	# Q_i = Q(x_i[1], beta) # x_i is a 2D vector in time inhomogeneous
 
  	f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
-	# val = init %*% diag(resp_fnc[, y_i[1]])
 
     for(k in 2:length(t_i)) {
       out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t, parms = list(b=beta, x_ik = x_i[k,]))
@@ -118,15 +116,10 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
                     0,  0, out[2,"p8"], out[2,"p9"],
                     0,  0,  0,  1), nrow = 4, byrow = T)
 
-      # if(y_i[k] < 4) {
-  # 		val = val %*% P %*% diag(resp_fnc[, y_i[k]])
-  #     } else {
-  # 		val = val %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
-  #     }
       if(y_i[k] < 4) {
         val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
       } else {
-        val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+        val = f_i %*% P %*% Q(x_i_Q[k,], beta) %*% diag(resp_fnc[, y_i[k]])
       }
 
       norm_val = sqrt(sum(val^2))
@@ -141,7 +134,8 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   mean = prior_par$prior_mean
   sd = diag(prior_par$prior_sd)
   log_prior_dens = dmvnorm( x=pars, mean=mean, sigma=sd, log=T)
-  return(total_val + log_prior_dens)
+
+  return(log_total_val + log_prior_dens)
 
 }
 
@@ -160,7 +154,6 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par)
 
   group = list(c(par_index$beta, par_index$misclass, par_index$pi_logit))
-  #group = list(c(1,2))
   n_group = length(group)
 
   pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))
@@ -187,8 +180,8 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
-      print("Likelihood Evaluation:")
-      print(log_post)
+      # print("Likelihood Evaluation:")
+      # print(log_post)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -204,13 +197,13 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
       # Evaluate the Metropolis-Hastings ratio
       if( log_post - log_post_prev > log(runif(1,0,1)) ){
         log_post_prev = log_post
-        print("Here")
         pars[ind_j] = proposal[ind_j]
         accept[j] = accept[j] +1
       }
       chain[ttt,ind_j] = pars[ind_j]
-      print("Parameters Accepted")
-      print(pars)
+      # print("Parameters Accepted")
+      # print(pars)
+      
       # Proposal tuning scheme ------------------------------------------------
       if(ttt < burnin){
         # During the burnin period, update the proposal covariance in each step

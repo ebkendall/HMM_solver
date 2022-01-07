@@ -28,7 +28,7 @@ load(paste0("Data/cavData", ind, ".rda"))
 temp_data = as.matrix(cavData); rownames(temp_data) = NULL
 id = temp_data[,"ptnum"]
 y = temp_data[,"state"]
-x = temp_data[, "sex", drop=F]
+x = temp_data[, c("years", "sex"), drop=F]
 t = temp_data[,"years"]
 steps = 10000
 burnin = 5000

@@ -96,7 +96,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
-  log_total_val = foreach(i=unique(id)[1:1000], .combine='+', .export = c("model_t", "Q"), .packages = "expm") %dopar% {
+  log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = "expm") %dopar% {
 
     y_i = y[id == i]
     x_i = x[id == i,,drop = F]
