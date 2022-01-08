@@ -30,13 +30,15 @@ floor_new <- function(t,p) {
       new_time = yearNum + monthSeq[timeInd]
     } else if (p==3) {
       new_time = floor(t)
-    } else {
+    } else if (p==4) {
       if(floor(t) %% 2 == 0) { #divisible by 2
         new_time = floor(t)
       } else {
         temp = t - 1
         new_time = floor(temp)
       }
+    } else {
+      print("Invalid input for p")
     }
     return(new_time)
 }
@@ -255,83 +257,59 @@ for(i in 1:nrow(rawData)){	rawData$state[i] <- sample(1:4, size=1, prob=errorMat
 # p = 3: yearly censor
 # p = 4: two year censor
 for(p in 1:4) {
-	
-  disc_time <- sapply(rawData$years, floor_new, p = p)
-  
-  obstrue <- rep(0,nrow(rawData))
-  
-  hold <- cbind(rawData,obstrue,disc_time)
-  hold <- hold[,c('ptnum','years','disc_time','sex','state','obstrue')]
-  
-  num <- 1
-  cavData <- NULL
-  for(i in unique(rawData$ptnum)){
-    
-    current <- NULL
-    subject <- hold[hold$ptnum==i,,drop=FALSE]
-    subject[2,] = c(1,0.04,0,0,1,0)
-    #------------------------------------
-    
-    censoredAges <- censor_times(subject$years, p)
-    
-    current <- data.frame('ptnum' = rep(i, length(censoredAges)),
-                          'years' = censoredAges,
-                          'disc_time' = censoredAges,
-                          'sex' = rep(subject$sex[1], length(censoredAges)),
-                          'state' = rep(99, length(censoredAges)),
-                          'obstrue' = rep(1, length(censoredAges)))
-    
-    # for (k in unique(subject$disc_time)) {
-    #   mainInd = min(which(subject$disc_time == k))
-    #   obs1 = sum(subject$years[mainInd] == current$disc_time)
-    #   if (obs1 == 1) {
-    #     myInd = which(current$disc_time == subject$years[mainInd])
-    #     current[myInd,] = subject[mainInd,]
-    #   } else {
-    #     if(max(which(subject$disc_time == k)) == nrow(subject)) {
-    #       current = rbind(current, subject[which(subject$disc_time == k), ])
-    #     } else {
-    #       myInd = max(which(current$disc_time < subject$years[mainInd]))
-    #       
-    #       startInd = myInd + 1
-    #       currLength = nrow(current)
-    #       
-    #       current = rbind(current[1:myInd, ], subject[which(subject$disc_time == k), ], current[startInd:currLength, ])
-    #     }
-    #   }
-    # }
-    
-    for(t in censoredAges ){
-      # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
-      if(t %in% subject$years){
-        current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
-        print(paste0(t, ": Start observed"))
-      } else{
-        
-        # Create a CENSORED row for each subject at each discritezed time.
-        tempRow['ptnum'] <- i
-        tempRow['years'] <- t
-        tempRow['disc_time'] <- t
-        tempRow['sex'] <- subject$sex[1]
-        tempRow['state'] <- 99
-        tempRow['obstrue'] <- 1
-        
-        current <- rbind( current, tempRow)
-        print(paste0(t, ": Censoring"))
-        
-        # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years)
-        if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
+
+    disc_time <- sapply(rawData$years, floor_new, p = p)
+
+    obstrue <- rep(0,nrow(rawData))
+
+    hold <- cbind(rawData,obstrue,disc_time)
+    hold <- hold[,c('ptnum','years','disc_time','sex','state','obstrue')]
+
+    tempRow <- rep(0,ncol(hold))
+    names(tempRow) <- c('ptnum','years','disc_time','sex','state','obstrue')
+
+    num <- 1
+    cavData <- NULL
+    for(i in unique(rawData$ptnum)){
+
+      current <- NULL
+      subject <- hold[hold$ptnum==i,,drop=FALSE]
+
+      #------------------------------------
+      # censoredAges <- unique( c( min(subject$age), ceiling(min(subject$age)):max(subject$age)) )
+
+      censoredAges <- censor_times(subject$years, p)
+
+      for(t in censoredAges ){
+
+        # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
+        if(t %in% subject$years){
+          current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
+          print(paste0(t, ": Start observed"))
+        } else{
+
+          # Create a CENSORED row for each subject at each discritezed time.
+          tempRow['ptnum'] <- i
+          tempRow['years'] <- t
+          tempRow['disc_time'] <- t
+          tempRow['sex'] <- subject$sex[1]
+          tempRow['state'] <- 99
+          tempRow['obstrue'] <- 1
+
+          current <- rbind( current, tempRow)
+          print(paste0(t, ": Censoring"))
+
+          # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
+          if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
+        }
+
       }
-      
+      #------------------------------------
+
+      cavData <- rbind( cavData, current)
+      #print(num)
+      num <- num+1
     }
-    
-    #------------------------------------
-    
-    cavData <- rbind( cavData, current)
-    #print(num)
-    num <- num+1
-  }
-  
     colnames(cavData) <- c('ptnum','years','disc_time','sex','state','obstrue')
 
     meanYears <- round( mean(cavData$years), 0) #should be rawData
@@ -399,35 +377,3 @@ for(p in 1:4) {
     print(quantile(NumObs_sim))
 
 }
-
-# #----------------------------------------------------------------------------------------------------------------
-# # Finding Parameter Estimates -----------------------------------------------------------------------------------
-# #----------------------------------------------------------------------------------------------------------------
-#
-# qmat <- matrix(c( 0,exp(-2),      0,exp(-2),
-#                   0,      0,exp(-2),exp(-2),
-#                   0,      0,      0,exp(-2),
-#                   0,      0,      0,      0), ncol=4, byrow=TRUE)
-# dimnames(qmat) <- list( c('Well', 'Mild','Severe','Death'), c('Well', 'Mild','Severe','Death'))
-#
-#
-# #----------------------------------------------------------------------------------------------------------------
-# # Run the msm implementation ------------------------------------------------------------------------------------
-# #----------------------------------------------------------------------------------------------------------------
-#
-# emat = matrix(c(      1, exp(-3),       0, 0,
-#                       exp(-3),       1, exp(-3), 0,
-#                       0, exp(-3),       1, 0,
-#                       0,       0,       0, 1), ncol=4, byrow=TRUE)
-# emat = emat / rowSums(emat)
-# dimnames(emat) <- list( c('Well','Mild','Severe','Death'), c('Well','Mild','Severe','Death'))
-#
-#
-# Output_msm <- msm(state ~ years, subject=ptnum, data=cavData, qmatrix=qmat, covariates= ~ 1 + disc_time + sex,
-#                   center=FALSE, covinits=list(disc_time=c(0,0,0,0,0),sex=c(0,0,0,0,0)), obstrue=obstrue,
-#                   ematrix=emat, initprobs=c(1, exp(-4.5), exp(-5), 0), est.initprobs=TRUE, deathexact=4,
-#                   censor=99, censor.states=1:3, method='BFGS', control=list(fnscale=4000, maxit=10000))
-#
-# save(Output_msm, file=paste("/blue/jantonelli/emmett.kendall/AdditionalWork/CAV/OutputTwoYear/Output_msm",
-#                             p, ".rda", sep=''))
-
