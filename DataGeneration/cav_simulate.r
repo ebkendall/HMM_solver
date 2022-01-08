@@ -1,23 +1,23 @@
 ##############################
 #### LOADING LIB AND DATA ####
 ##############################
-# package.install = function(pack) {
-#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-#
-#   # name of package to install / load
-#   pack = pack
-#
-#   if (pack %in% rownames(installed.packages())) {
-#     library(pack, character.only=T)
-#   } else {
-#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     } else {
-#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     }
-#   }
-# }
+package.install = function(pack) {
+  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+
+  # name of package to install / load
+  pack = pack
+
+  if (pack %in% rownames(installed.packages())) {
+    library(pack, character.only=T)
+  } else {
+    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    } else {
+      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    }
+  }
+}
 
 floor_new <- function(t,p) {
     new_time = 0
@@ -59,11 +59,9 @@ censor_times <- function(t, p) {
   return(new_time)
 }
 
-# package.install("msm")
-library(msm)
+package.install("msm")
 
-#num_iter = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-num_iter = 420
+num_iter = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 
 # p = 1 --> update every day
 # p = 2 --> update every month
@@ -75,7 +73,7 @@ folder_name = c("Continuous", "Month", "Year", "YearTwo")
 
 
 # Set the sample size.  Note that the cav data set has 622 subjects.
-N <- 20
+N <- 2000
 # Choose the discretization of time.
 dt <- 1/365
 
@@ -316,9 +314,6 @@ for(p in 1:4) {
     colnames(cavData) <- c('ptnum','years','disc_time','sex','state','obstrue')
     rownames(cavData) <- NULL
 
-    # Save the sample size becaue it will vary for a population study.
-    # save(N,file=paste0('sampleSize',args[1],'.rda'))
-
     save(cavData, file=paste("DataOut/", folder_name[p], "/cavData", num_iter, ".rda", sep=''))
 
     #-------------------------------------------------------------------------------
@@ -327,23 +322,31 @@ for(p in 1:4) {
     #-------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------
 
-    # # Transition frequencies for the true cav data set.
-    # nTrans <- rep(0,5)
-    # for(i in 1:N_cav){
-    #
-    # 	subject <- cav[cav$PTNUM==unique(cav$PTNUM)[i],,drop=FALSE]
-    #
-    # 	if(4 %in% subject$state){
-    # 		if( max(setdiff(subject$state,4)) == 1){nTrans[2] = nTrans[2] +1}
-    # 		if( max(setdiff(subject$state,4)) == 2){nTrans[4] = nTrans[4] +1}
-    # 		if( max(setdiff(subject$state,4)) == 3){nTrans[5] = nTrans[5] +1}
-    # 	}
-    #
-    # 	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans[1] = nTrans[1] +1 }
-    # 	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans[3] = nTrans[3] +1 }
-    # }
+    # Transition frequencies for the true cav data set.
+    if (p == 1) {
+        nTrans <- rep(0,5)
+        for(i in 1:N_cav){
 
+        	subject <- cav[cav$PTNUM==unique(cav$PTNUM)[i],,drop=FALSE]
 
+        	if(4 %in% subject$state){
+        		if( max(setdiff(subject$state,4)) == 1){nTrans[2] = nTrans[2] +1}
+        		if( max(setdiff(subject$state,4)) == 2){nTrans[4] = nTrans[4] +1}
+        		if( max(setdiff(subject$state,4)) == 3){nTrans[5] = nTrans[5] +1}
+        	}
+
+        	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans[1] = nTrans[1] +1 }
+        	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans[3] = nTrans[3] +1 }
+        }
+
+        cat('Cav data set sample size                               = ', N_cav,'\n')
+        cat('Cav data set transition fequencies                     = ', nTrans / sum(nTrans),'\n')
+        cat('Cav data set transition counts                         = ', nTrans,'\n')
+        cat('Cav data set proportion of observed deaths             = ', propDeaths,'\n')
+        cat('Cav data set quantiles of number of observations       = ','\n')
+        print(quantile(NumObs))
+        cat('\n')
+    }
     # Transition frequencies for the simulated data set.
     obs_cavData <- cavData[cavData$obstrue == 0, ]
     nTrans_sim <- rep(0,5)
@@ -360,14 +363,6 @@ for(p in 1:4) {
     	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans_sim[1] = nTrans_sim[1] +1 }
     	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans_sim[3] = nTrans_sim[3] +1 }
     }
-    #
-    # cat('Cav data set sample size                               = ', N_cav,'\n')
-    # cat('Cav data set transition fequencies                     = ', nTrans / sum(nTrans),'\n')
-    # cat('Cav data set transition counts                         = ', nTrans,'\n')
-    # cat('Cav data set proportion of observed deaths             = ', propDeaths,'\n')
-    # cat('Cav data set quantiles of number of observations       = ','\n')
-    # print(quantile(NumObs))
-    # cat('\n')
     cat('Simulated data set sample size                         = ', N,'\n')
     cat('Simulated data set transition fequencies               = ', nTrans_sim / sum(nTrans_sim),'\n')
     cat('Simulated data set transition counts                   = ', nTrans_sim,'\n')
