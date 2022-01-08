@@ -268,48 +268,50 @@ for(p in 1:4) {
 
     num <- 1
     cavData <- NULL
-    for(i in unique(rawData$ptnum)){
+    if(p != 1) {
+        for(i in unique(rawData$ptnum)){
 
-      current <- NULL
-      subject <- hold[hold$ptnum==i,,drop=FALSE]
+          current <- NULL
+          subject <- hold[hold$ptnum==i,,drop=FALSE]
 
-      #------------------------------------
-      # censoredAges <- unique( c( min(subject$age), ceiling(min(subject$age)):max(subject$age)) )
+          #------------------------------------
+          censoredAges <- censor_times(subject$years, p)
 
-      censoredAges <- censor_times(subject$years, p)
+          for(t in censoredAges ){
 
-      for(t in censoredAges ){
+            # Rounding t, subject$years, & subject$disc_time to make sure we have equality
+            t_round = round(t, digits = 5)
+            yrs_round = round(subject$years, digits = 5)
+            disc_round = round(subject$disc_time, digits = 5)
 
-        # Rounding t, subject$years, & subject$disc_time to make sure we have equality
-        t_round = round(t, digits = 5)
-        yrs_round = round(subject$years, digits = 5)
-        disc_round = round(subject$disc_time, digits = 5)
+            # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
+            if(t_round %in% yrs_round){
+              current <- rbind( current, subject[disc_round==round(floor_new(t,p), digits=5),])
+            } else{
 
-        # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
-        if(t_round %in% yrs_round){
-          current <- rbind( current, subject[disc_round==round(floor_new(t,p), digits=5),])
-        } else{
+              # Create a CENSORED row for each subject at each discritezed time.
+              tempRow['ptnum'] <- i
+              tempRow['years'] <- t
+              tempRow['disc_time'] <- t
+              tempRow['sex'] <- subject$sex[1]
+              tempRow['state'] <- 99
+              tempRow['obstrue'] <- 1
 
-          # Create a CENSORED row for each subject at each discritezed time.
-          tempRow['ptnum'] <- i
-          tempRow['years'] <- t
-          tempRow['disc_time'] <- t
-          tempRow['sex'] <- subject$sex[1]
-          tempRow['state'] <- 99
-          tempRow['obstrue'] <- 1
+              current <- rbind( current, tempRow)
 
-          current <- rbind( current, tempRow)
+              # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
+              if(t_round %in% disc_round){ current <- rbind( current, subject[disc_round==t_round,])}
+            }
 
-          # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
-          if(t_round %in% disc_round){ current <- rbind( current, subject[disc_round==t_round,])}
+          }
+          #------------------------------------
+
+          cavData <- rbind( cavData, current)
+          #print(num)
+          num <- num+1
         }
-
-      }
-      #------------------------------------
-
-      cavData <- rbind( cavData, current)
-      #print(num)
-      num <- num+1
+    } else {
+        cavData = hold
     }
     colnames(cavData) <- c('ptnum','years','disc_time','sex','state','obstrue')
     rownames(cavData) <- NULL
@@ -325,25 +327,25 @@ for(p in 1:4) {
     #-------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------
 
-    # Transition frequencies for the true cav data set.
-    nTrans <- rep(0,5)
-    for(i in 1:N_cav){
-
-    	subject <- cav[cav$PTNUM==unique(cav$PTNUM)[i],,drop=FALSE]
-
-    	if(4 %in% subject$state){
-    		if( max(setdiff(subject$state,4)) == 1){nTrans[2] = nTrans[2] +1}
-    		if( max(setdiff(subject$state,4)) == 2){nTrans[4] = nTrans[4] +1}
-    		if( max(setdiff(subject$state,4)) == 3){nTrans[5] = nTrans[5] +1}
-    	}
-
-    	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans[1] = nTrans[1] +1 }
-    	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans[3] = nTrans[3] +1 }
-    }
+    # # Transition frequencies for the true cav data set.
+    # nTrans <- rep(0,5)
+    # for(i in 1:N_cav){
+    #
+    # 	subject <- cav[cav$PTNUM==unique(cav$PTNUM)[i],,drop=FALSE]
+    #
+    # 	if(4 %in% subject$state){
+    # 		if( max(setdiff(subject$state,4)) == 1){nTrans[2] = nTrans[2] +1}
+    # 		if( max(setdiff(subject$state,4)) == 2){nTrans[4] = nTrans[4] +1}
+    # 		if( max(setdiff(subject$state,4)) == 3){nTrans[5] = nTrans[5] +1}
+    # 	}
+    #
+    # 	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans[1] = nTrans[1] +1 }
+    # 	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans[3] = nTrans[3] +1 }
+    # }
 
 
     # Transition frequencies for the simulated data set.
-    obs_cavData <- cavData
+    obs_cavData <- cavData[cavData$obstrue == 0, ]
     nTrans_sim <- rep(0,5)
     for(i in unique(obs_cavData$ptnum)){
 
@@ -358,19 +360,20 @@ for(p in 1:4) {
     	if(   1 %in% subject$state   &   2 %in% subject$state   ){ nTrans_sim[1] = nTrans_sim[1] +1 }
     	if(   2 %in% subject$state   &   3 %in% subject$state   ){ nTrans_sim[3] = nTrans_sim[3] +1 }
     }
-
-    cat('Cav data set sample size                               = ', N_cav,'\n')
-    cat('Cav data set transition fequencies                     = ', nTrans / sum(nTrans),'\n')
-    cat('Cav data set transition counts                         = ', nTrans,'\n')
-    cat('Cav data set proportion of observed deaths             = ', propDeaths,'\n')
-    cat('Cav data set quantiles of number of observations       = ','\n')
-    print(quantile(NumObs))
-    cat('\n')
+    #
+    # cat('Cav data set sample size                               = ', N_cav,'\n')
+    # cat('Cav data set transition fequencies                     = ', nTrans / sum(nTrans),'\n')
+    # cat('Cav data set transition counts                         = ', nTrans,'\n')
+    # cat('Cav data set proportion of observed deaths             = ', propDeaths,'\n')
+    # cat('Cav data set quantiles of number of observations       = ','\n')
+    # print(quantile(NumObs))
+    # cat('\n')
     cat('Simulated data set sample size                         = ', N,'\n')
     cat('Simulated data set transition fequencies               = ', nTrans_sim / sum(nTrans_sim),'\n')
     cat('Simulated data set transition counts                   = ', nTrans_sim,'\n')
     cat('Simulated data set proportion of observed deaths       = ', propDeaths_sim,'\n')
     cat('Simulated data set quantiles of number of observations = ','\n')
     print(quantile(NumObs_sim))
+    print(sum(cavData$obstrue == 0))
 
 }
