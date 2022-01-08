@@ -186,8 +186,6 @@ for(i in 1:N){
   while(s < 4){
 
     # Infinitesimal transition rates.
-    #qTimeInput = floor_new(time1, 1)
-
     qmat <- Q(time1,sex,betaMat)
 
     # Possible next states.
@@ -282,10 +280,14 @@ for(p in 1:4) {
 
       for(t in censoredAges ){
 
+        # Rounding t, subject$years, & subject$disc_time to make sure we have equality
+        t_round = round(t, digits = 5)
+        yrs_round = round(subject$years, digits = 5)
+        disc_round = round(subject$disc_time, digits = 5)
+
         # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
-        if(t %in% subject$years){
-          current <- rbind( current, subject[subject$disc_time==floor_new(t,p),])
-          print(paste0(t, ": Start observed"))
+        if(t_round %in% yrs_round){
+          current <- rbind( current, subject[disc_round==round(floor_new(t,p), digits=5),])
         } else{
 
           # Create a CENSORED row for each subject at each discritezed time.
@@ -297,10 +299,9 @@ for(p in 1:4) {
           tempRow['obstrue'] <- 1
 
           current <- rbind( current, tempRow)
-          print(paste0(t, ": Censoring"))
 
           # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
-          if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==t,]); print(paste0(t, ": Finish observe")) }
+          if(t_round %in% disc_round){ current <- rbind( current, subject[disc_round==t_round,])}
         }
 
       }
@@ -311,10 +312,6 @@ for(p in 1:4) {
       num <- num+1
     }
     colnames(cavData) <- c('ptnum','years','disc_time','sex','state','obstrue')
-
-    meanYears <- round( mean(cavData$years), 0) #should be rawData
-    # Save the mean years to be able to compute to true intercept value ( beta_0 + beta_1 * mean ).
-    save(meanYears, file=paste("DataOut/", folder_name[p], "/meanYears", num_iter, ".rda", sep=''))
     rownames(cavData) <- NULL
 
     # Save the sample size becaue it will vary for a population study.
