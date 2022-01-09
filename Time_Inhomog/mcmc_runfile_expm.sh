@@ -6,7 +6,7 @@
 #SBATCH --ntasks=17
 #SBATCH --account=jantonelli
 #SBATCH --qos=jantonelli-b
-#SBATCH --job-name=homog_expm
+#SBATCH --job-name=inhomog_expm
 #SBATCH --time=01:00:00
 #SBATCH -t 4000
 #SBATCH --mem=5gb
