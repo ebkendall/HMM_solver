@@ -25,7 +25,7 @@ data_files <- c("Year", "YearTwo", "Month")
 for (folder in 1:3) {
 
     Dir <- paste0("../DataGeneration/DataOut/", data_files[folder], "/")
-    load(paste0(Dir,'cavData',seedInd,'.rda'))
+    load(paste0(Dir,'cavData',ind,'.rda'))
 
     temp_data = as.matrix(cavData); rownames(temp_data) = NULL
     id = temp_data[,"ptnum"]
@@ -43,6 +43,6 @@ for (folder in 1:3) {
 
     e_time = Sys.time() - s_time; print(e_time)
 
-    save(mcmc_out, file = paste0('Model_out/expm/', data_files[folder] ,'/mcmc_out_',seedInd,'.rda'))
+    save(mcmc_out, file = paste0('Model_out/expm/', data_files[folder] ,'/mcmc_out_',ind,'.rda'))
 
 }
