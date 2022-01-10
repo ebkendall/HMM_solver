@@ -26,16 +26,15 @@ steps =  20000
 # Matrix row indices for the posterior sample to use for GFF computation
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list(beta=1:10, misclass=11:14, pi_logit=15:16)
-# par_index = list( beta=1:15, pi_logit=16:17)
+par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
 
-true_par = c(c(matrix(c(-2.54, -0.56,
-                        -2.94,  0.15,
-                        -1.10, -0.03,
-                        -3.92,  0.21,
-                        -2.12,  1.17), ncol=2, byrow=T)),
-            c(  -4.59512, -1.15268, -2.751535, -2.090741),
-            c( -3.178054, -4.59512))
+true_par = c(c(matrix(c(-2.54,  0.11, -0.56,
+                        -2.94, -0.24,  0.15,
+                        -1.10, -0.15, -0.03,
+                        -3.92,  0.23,  0.21,
+                        -2.12,  0.08,  1.17), ncol=3, byrow=T)),
+                  c(  -4.59512, -1.15268, -2.751535, -2.090741),
+                  c( -3.178054, -4.59512))
 
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
@@ -43,11 +42,11 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'b.l. S2 (mild)   --->   S3 (severe)',
             'b.l. S2 (mild)   --->   S4 (dead)',
             'b.l. S3 (severe)   --->   S4 (dead)',
-            # 'iyears State 1 (well)   --->   State 2 (mild)',
-            # 'iyears State 1 (well)   --->   State 4 (dead)',
-            # 'iyears State 2 (mild)   --->   State 3 (severe)',
-            # 'iyears State 2 (mild)   --->   State 4 (dead)',
-            # 'iyears State 3 (severe)   --->   State 4 (dead)',
+            'iyears S1 (well)   --->   S2 (mild)',
+            'iyears S1 (well)   --->   S4 (dead)',
+            'iyears S2 (mild)   --->   S3 (severe)',
+            'iyears S2 (mild)   --->   S4 (dead)',
+            'iyears S3 (severe)   --->   S4 (dead)',
             'sex S1 (well)   --->   S2 (mild)',
             'sex S1 (well)   --->   S4 (dead)',
             'sex S2 (mild)   --->   S3 (severe)',
@@ -58,6 +57,47 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'P( obs. S3 | true S2 )',
             'P( obs. S2 | true S3 )',
             'P( init S2 )','P( init S3 )')
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Calculating Credible Sets ---------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+cred_set = vector(mode = 'list', length = length(true_par))
+for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
+                                                        'upper' = c(-1))
+ind = 0
+
+for (i in 1:100) {
+    file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
+    if(file.exists(file_name)){
+	    load(file_name) # changed toString to 3
+        ind = ind + 1
+
+        for(j in 1:length(true_par)) {
+            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                        prob=.025), 4)
+            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                        prob=.975), 4)
+        }
+  }
+}
+
+save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
+
+# -----------------------------------------------------------------------------
+# Calculating Coverage --------------------------------------------------------
+# -----------------------------------------------------------------------------
+cov_df <- c()
+for(i in 1:length(true_par)) {
+    val = true_par[i]
+    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
+    bot = nrow(cred_set[[i]])
+    covrg = top/bot
+    cov_df[i] = covrg
+    print(paste0("Coverage for parameter ", val, " is: ", covrg))
+}
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
@@ -111,8 +151,8 @@ for(r in 1:length(labels)){
     geom_violin(trim=FALSE) +
     geom_boxplot(width=0.1) +
     ggtitle(labels[r]) +
-    ylab('') +
-    xlab(paste0("Parameter Value: ", true_par[r])) +
+    ylab(paste0("Parameter Value: ", true_par[r])) +
+    xlab(paste0("Coverage is: ", cov_df[r])) +
     geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
     theme(text = element_text(size = 7))
   #boxplot(post_means[,r], main=labels[r], ylab=NA, xlab = true_par[r])
@@ -121,44 +161,8 @@ for(r in 1:length(labels)){
 }
 grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
              VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
-grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]],
-             VP[[14]], VP[[15]], VP[[16]], ncol=3, nrow =3)
+grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
+             VP[[15]], VP[[16]], VP[[17]], VP[[18]], ncol=3, nrow =3)
+grid.arrange(VP[[19]], VP[[20]], VP[[21]], ncol=3, nrow =3)
+
 dev.off()
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Calculating Credible Sets ---------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-cred_set = vector(mode = 'list', length = length(true_par))
-for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
-                                                        'upper' = c(-1))
-ind = 0
-
-for (i in 1:100) {
-    file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
-    if(file.exists(file_name)){
-	    load(file_name) # changed toString to 3
-        ind = ind + 1
-
-        for(j in 1:length(true_par)) {
-            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.025), 4)
-            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.975), 4)
-        }
-  }
-}
-
-save(cred_set, file = paste0('Plots/cred_set', model_name[folder], '.rda'))
-
-# -----------------------------------------------------------------------------
-# Calculating Coverage --------------------------------------------------------
-# -----------------------------------------------------------------------------
-for(i in 1:length(true_par)) {
-    val = true_par[i]
-    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
-    bot = nrow(cred_set[[i]])
-    covrg = top/bot
-    print(paste0("Coverage for parameter ", val, " is: ", covrg))
-}

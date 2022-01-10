@@ -1,6 +1,7 @@
 source("mcmc_routine_expm.r")
 
-ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+# ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+ind = 10
 set.seed(ind)
 
 trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
@@ -34,7 +35,7 @@ for (folder in 1:3) {
     t = temp_data[,"years"]
     steps = 20000
     burnin = 5000
-    n_cores = 16
+    n_cores = 8
 
     s_time = Sys.time()
 

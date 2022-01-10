@@ -38,14 +38,14 @@ package.install("doParallel")
 # library("foreach")
 # library("doParallel")
 
-Q <- function(x_ik,beta){
+Q <- function(t,x_ik,beta){
 
   betaMat = matrix(beta, ncol = 3, byrow = F) # ncol is 3 for time inhomogenous
-  q1  = exp( c(1,x_ik) %*% betaMat[1,] )  # Transition from state 1 to state 2.
-  q2  = exp( c(1,x_ik) %*% betaMat[2,] )  # Transition from state 2 to state 3.
-  q3  = exp( c(1,x_ik) %*% betaMat[3,] )  # Transition from state 1 to death.
-  q4  = exp( c(1,x_ik) %*% betaMat[4,] )  # Transition from state 2 to death.
-  q5  = exp( c(1,x_ik) %*% betaMat[5,] )  # Transition from state 3 to death.
+  q1  = exp( c(1,t,x_ik) %*% betaMat[1,] )  # Transition from state 1 to state 2.
+  q2  = exp( c(1,t,x_ik) %*% betaMat[2,] )  # Transition from state 2 to state 3.
+  q3  = exp( c(1,t,x_ik) %*% betaMat[3,] )  # Transition from state 1 to death.
+  q4  = exp( c(1,t,x_ik) %*% betaMat[4,] )  # Transition from state 2 to death.
+  q5  = exp( c(1,t,x_ik) %*% betaMat[5,] )  # Transition from state 3 to death.
 
   qmat = matrix(c( 0,q1, 0,q2,
                    0, 0,q3,q4,
@@ -102,13 +102,15 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 
 	y_i = y[id == i]
     x_i = x[id == i,"sex",drop = F]
-    x_i_Q = x[id == i,,drop = F]
+    if(disc==T) disc_t_i = x[id == i,"disc_time",drop = F]
   	t_i = t[id == i]
 
  	f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
 
     for(k in 2:length(t_i)) {
+
+
       out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t, parms = list(b=beta, x_ik = x_i[k,]))
       # WARNING IF-ELSE STATEMENT
       P <- matrix(c(out[2,"p1"], out[2,"p2"], out[2,"p3"], out[2,"p4"],
@@ -119,7 +121,11 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
       if(y_i[k] < 4) {
         val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
       } else {
-        val = f_i %*% P %*% Q(x_i_Q[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+          if(disc==T){
+              val = f_i %*% P %*% Q(disc_t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+          } else{
+              val = f_i %*% P %*% Q(t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+          }
       }
 
       norm_val = sqrt(sum(val^2))
@@ -203,7 +209,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
       chain[ttt,ind_j] = pars[ind_j]
       # print("Parameters Accepted")
       # print(pars)
-      
+
       # Proposal tuning scheme ------------------------------------------------
       if(ttt < burnin){
         # During the burnin period, update the proposal covariance in each step

@@ -1,42 +1,40 @@
-package.install = function(pack) {
-  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-
-  # name of package to install / load
-  pack = pack
-
-  if (pack %in% rownames(installed.packages())) {
-    library(pack, character.only=T)
-  } else {
-    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    } else {
-      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    }
-  }
-}
-
-# This script contains the code for the mcmc and its helper functions
-
-package.install("mvtnorm")
-package.install("foreach")
-package.install("doParallel")
-package.install("msm")
-package.install("deSolve")
-package.install("expm")
-package.install("foreach")
-package.install("doParallel")
-
-
-# library(mvtnorm, quietly=T)
-# library(foreach, quietly=T)
-# library(doParallel, quietly=T)
+# package.install = function(pack) {
+#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
 #
-# library("msm")
-# library("deSolve")
-# library("expm")
-# library("foreach")
-# library("doParallel")
+#   # name of package to install / load
+#   pack = pack
+#
+#   if (pack %in% rownames(installed.packages())) {
+#     library(pack, character.only=T)
+#   } else {
+#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+#     } else {
+#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+#     }
+#   }
+# }
+#
+# # This script contains the code for the mcmc and its helper functions
+#
+# package.install("mvtnorm")
+# package.install("foreach")
+# package.install("doParallel")
+# package.install("msm")
+# package.install("deSolve")
+# package.install("expm")
+
+
+library(mvtnorm, quietly=T)
+library(foreach, quietly=T)
+library(doParallel, quietly=T)
+
+library("msm")
+library("deSolve")
+library("expm")
+library("foreach")
+library("doParallel")
 
 Q <- function(x_ik,beta){
 
@@ -71,7 +69,6 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
   log_total_val = foreach(i=unique(id), .combine='+', .export = "Q", .packages = "expm") %dopar% {
-
     y_i = y[id == i]
     x_i = x[id == i,,drop = F]
     t_i = t[id == i]
@@ -101,7 +98,6 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
     log_prior_dens = dmvnorm( x=pars, mean=mean, sigma=sd, log=T)
-
   return(log_total_val + log_prior_dens)
 
 }
