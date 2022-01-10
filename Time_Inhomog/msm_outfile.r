@@ -78,6 +78,7 @@ for(i in 1:length(trueValues)) {
 pdf("Plots/msm.pdf", onefile = T)
 grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
              VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
-grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]],
-             VP[[14]], VP[[15]], VP[[16]], ncol=3, nrow =3)
+grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
+             VP[[15]], VP[[16]], VP[[17]], VP[[18]], ncol=3, nrow =3)
+grid.arrange(VP[[19]], VP[[20]], VP[[21]], ncol=3, nrow =3)
 dev.off()
