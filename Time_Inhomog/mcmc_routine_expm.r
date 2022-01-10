@@ -1,40 +1,40 @@
-# package.install = function(pack) {
-#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-#
-#   # name of package to install / load
-#   pack = pack
-#
-#   if (pack %in% rownames(installed.packages())) {
-#     library(pack, character.only=T)
-#   } else {
-#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     } else {
-#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     }
-#   }
-# }
-#
-# # This script contains the code for the mcmc and its helper functions
-#
-# package.install("mvtnorm")
-# package.install("foreach")
-# package.install("doParallel")
-# package.install("msm")
-# package.install("deSolve")
-# package.install("expm")
+package.install = function(pack) {
+  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+
+  # name of package to install / load
+  pack = pack
+
+  if (pack %in% rownames(installed.packages())) {
+    library(pack, character.only=T)
+  } else {
+    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    } else {
+      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    }
+  }
+}
+
+# This script contains the code for the mcmc and its helper functions
+
+package.install("mvtnorm")
+package.install("foreach")
+package.install("doParallel")
+package.install("msm")
+package.install("deSolve")
+package.install("expm")
 
 
-library(mvtnorm, quietly=T)
-library(foreach, quietly=T)
-library(doParallel, quietly=T)
-
-library("msm")
-library("deSolve")
-library("expm")
-library("foreach")
-library("doParallel")
+# library(mvtnorm, quietly=T)
+# library(foreach, quietly=T)
+# library(doParallel, quietly=T)
+#
+# library("msm")
+# library("deSolve")
+# library("expm")
+# library("foreach")
+# library("doParallel")
 
 Q <- function(x_ik,beta){
 
@@ -72,24 +72,36 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
     y_i = y[id == i]
     x_i = x[id == i,,drop = F]
     t_i = t[id == i]
-    Q_i = Q(x_i[1,], beta) # x_i is a 2D vector in time inhomogeneous
+
+    # NOTE: The below only exists because of time homogeneous
+    # Q_i = Q(x_i[1,], beta)
 
     f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
 
     for(k in 2:length(t_i)) {
 
-      P = expm((t_i[k] - t_i[k-1]) * Q_i)
+      P = expm((t_i[k] - t_i[k-1]) * Q(x_i[k-1,], beta)) # Used to be just Q_i
 
-  	  if(y_i[k] < 4) {
-          val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-        } else {
-          val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
-        }
+      if (y_i[k] != 99) {
+          if (y_i[k] < 4) {
+              val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
+          } else { # Death is observed
+              val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+          }
 
-      norm_val = sqrt(sum(val^2))
-  	  f_i = val / norm_val
-  	  log_norm = log_norm + log(norm_val)
+          norm_val = sqrt(sum(val^2))
+      	  f_i = val / norm_val
+      	  log_norm = log_norm + log(norm_val)
+      } else { # sum over all possibilities for likelihood (jackson2011)
+          for(w in 1:3) {
+              val = f_i %*% P %*% diag(resp_fnc[, w])
+
+              norm_val = sqrt(sum(val^2))
+          	  f_i = val / norm_val
+          	  log_norm = log_norm + log(norm_val)
+          }
+      }
     }
 
     return(log(sum(f_i)) + log_norm)
@@ -163,8 +175,8 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
         accept[j] = accept[j] +1
       }
       chain[ttt,ind_j] = pars[ind_j]
-      # print("Parameters Accepted")
-      # print(pars)
+      print("Parameters Accepted")
+      print(pars)
 
       # Proposal tuning scheme ------------------------------------------------
       if(ttt < burnin){
