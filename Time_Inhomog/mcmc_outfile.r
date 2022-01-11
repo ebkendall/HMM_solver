@@ -1,6 +1,5 @@
 # This script file produces trace plots and histograms of the mcmc output files
 # To run from command line...
-# $ Rscript out_file_mcmc.r num_seeds directory simulation
 requiredPackages = c('tidyverse','gridExtra')
 for(p in requiredPackages){
   if(!require(p,character.only = TRUE)) install.packages(p)
@@ -12,10 +11,10 @@ args = commandArgs(TRUE)
 folder = as.numeric(args[1])
 
 model_name = c('deSolve', 'expm')
-dir = paste0('Model_out/', model_name[folder], '/')
-simulation = T #as.logical(args[3]) # true or false
+sub_folder = c('Month/', 'Year/', 'YearTwo/')
+for_length = c(1, 3)
 
-#data_names <- c(rep('orig',3), 'half', 'unhidden')
+dir = paste0('Model_out/', model_name[folder], '/')
 
 # Size of posterior sample from mcmc chains
 n_post = 5000
@@ -35,6 +34,17 @@ true_par = c(c(matrix(c(-2.54,  0.11, -0.56,
                         -2.12,  0.08,  1.17), ncol=3, byrow=T)),
                   c(  -4.59512, -1.15268, -2.751535, -2.090741),
                   c( -3.178054, -4.59512))
+
+# Doing the inverse logit for true_par
+true_par[par_index$pi_logit] =
+    exp(true_par[par_index$pi_logit])/(1 + exp(true_par[par_index$pi_logit]))
+true_par[par_index$misclass[1]] =
+    exp(true_par[par_index$misclass[1]])/(1 + exp(true_par[par_index$misclass[1]]))
+true_par[par_index$misclass[2:3]] =
+    exp(true_par[par_index$misclass[2:3]])/sum(c(1, exp(true_par[par_index$misclass[2:3]])))
+true_par[par_index$misclass[4]] =
+    exp(true_par[par_index$misclass[4]])/(1 + exp(true_par[par_index$misclass[4]]))
+
 
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
@@ -65,23 +75,52 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # -----------------------------------------------------------------------------
 
 cred_set = vector(mode = 'list', length = length(true_par))
-for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
-                                                        'upper' = c(-1))
-ind = 0
+for(i in 1:length(cred_set)) {
+    if(folder == 1) {
+        cred_set[[i]] = data.frame('lower' = c(-1), 'upper' = c(-1))
+    } else {
+        # Now there are 3 credible sets per parameter for different discretizations
+        cred_set[[i]] = vector(mode = 'list', length = length(sub_folder))
+        cred_set[[i]][[1]] = cred_set[[i]][[2]] = cred_set[[i]][[3]] =
+                data.frame('lower' = c(-1), 'upper' = c(-1))
+    }
 
-for (i in 1:100) {
+}
+
+for (i in 1:50) {
     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
-    if(file.exists(file_name)){
-	    load(file_name) # changed toString to 3
-        ind = ind + 1
+    # If its deSolve, for_length[folder] = 1
+    # If its expm, for_length[folder] = 3 b/c of the 3 discretizations
+    for(w in 1:for_length[folder]) {
+        if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(i),'.rda')}
+
+	    load(file_name)
+
+        # Inverse logit to convert back to probabilities
+        mcmc_out$chain[,par_index$pi_logit] =
+            exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
+        mcmc_out$chain[,par_index$misclass[1]] =
+            exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
+        mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
+                                                   exp(mcmc_out$chain[,par_index$misclass[2]]) +
+                                                   exp(mcmc_out$chain[,par_index$misclass[3]]))
+        mcmc_out$chain[,par_index$misclass[4]] =
+            exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
 
         for(j in 1:length(true_par)) {
-            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.025), 4)
-            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.975), 4)
+            if(folder == 2) {
+                cred_set[[j]][[w]][i,1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                            prob=.025), 4)
+                cred_set[[j]][[w]][i,2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                            prob=.975), 4)
+            } else {
+                cred_set[[j]][i,1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                            prob=.025), 4)
+                cred_set[[j]][i,2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                            prob=.975), 4)
+            }
         }
-  }
+    }
 }
 
 save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
@@ -89,14 +128,29 @@ save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
 # -----------------------------------------------------------------------------
 # Calculating Coverage --------------------------------------------------------
 # -----------------------------------------------------------------------------
-cov_df <- c()
-for(i in 1:length(true_par)) {
-    val = true_par[i]
-    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
-    bot = nrow(cred_set[[i]])
-    covrg = top/bot
-    cov_df[i] = covrg
-    print(paste0("Coverage for parameter ", val, " is: ", covrg))
+if (folder == 1) {
+    cov_df <- c()
+    for(i in 1:length(true_par)) {
+        val = true_par[i]
+        top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
+        bot = nrow(cred_set[[i]])
+        covrg = top/bot
+        cov_df[i] = covrg
+        print(paste0("Coverage for parameter ", val, " is: ", covrg))
+    }
+} else {
+    cov_df = matrix(ncol = length(sub_folder)); colnames(cov_df) = sub_folder
+
+    for(i in 1:length(true_par)) {
+        val = true_par[i]
+        for(j in 1:ncol(cov_df)) {
+            top = length(which(cred_set[[i]][[j]]$lower <= val & val <= cred_set[[i]][[j]]$upper))
+            bot = nrow(cred_set[[i]][[j]])
+            covrg = top/bot
+            cov_df[i,j] = covrg
+        }
+        print(paste0("Coverage for parameter ", val, " is: ", covrg))
+    }
 }
 
 # -----------------------------------------------------------------------------
@@ -114,8 +168,19 @@ for(seed in index_seeds){
         ind = ind + 1
         print(mcmc_out$accept)
 
-      	chain_list[[ind]] = mcmc_out$chain[index_post,]
-    	post_means[ind,] <- colMeans(mcmc_out$chain[index_post,])
+        # Inverse logit to convert back to probabilities
+        mcmc_out$chain[,par_index$pi_logit] =
+            exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
+        mcmc_out$chain[,par_index$misclass[1]] =
+            exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
+        mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
+                                                   exp(mcmc_out$chain[,par_index$misclass[2]]) +
+                                                   exp(mcmc_out$chain[,par_index$misclass[3]]))
+        mcmc_out$chain[,par_index$misclass[4]] =
+            exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
+
+      	chain_list[[i]] = mcmc_out$chain[index_post,]
+    	post_means[i,] <- colMeans(mcmc_out$chain[index_post,])
   }
 }
 
@@ -155,8 +220,6 @@ for(r in 1:length(labels)){
     xlab(paste0("Coverage is: ", cov_df[r])) +
     geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
     theme(text = element_text(size = 7))
-  #boxplot(post_means[,r], main=labels[r], ylab=NA, xlab = true_par[r])
-  #abline(h=true_par[r], col="red")
 
 }
 grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],

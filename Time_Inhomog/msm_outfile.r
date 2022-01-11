@@ -47,6 +47,8 @@ for (i in 1:nFrames) {
 
 }
 
+par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
+
 trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
                            -2.94, -0.24,  0.15,
                            -1.10, -0.15, -0.03,
@@ -54,6 +56,55 @@ trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
                            -2.12,  0.08,  1.17), ncol=3, byrow=T)),
                   c(  -4.59512, -1.15268, -2.751535, -2.090741),
                   c( -3.178054, -4.59512))
+
+# ------------------------------------------------------------------------------
+# Doing the inverse logit ------------------------------------------------------
+# ------------------------------------------------------------------------------
+# trueValues transformation
+trueValues[par_index$pi_logit] =
+  exp(trueValues[par_index$pi_logit])/(1 + exp(trueValues[par_index$pi_logit]))
+trueValues[par_index$misclass[1]] =
+  exp(trueValues[par_index$misclass[1]])/(1 + exp(trueValues[par_index$misclass[1]]))
+trueValues[par_index$misclass[2:3]] =
+  exp(trueValues[par_index$misclass[2:3]])/sum(c(1, exp(trueValues[par_index$misclass[2:3]])))
+trueValues[par_index$misclass[4]] =
+  exp(trueValues[par_index$misclass[4]])/(1 + exp(trueValues[par_index$misclass[4]]))
+
+# Month transformation
+month_data[,par_index$pi_logit] =
+    exp(month_data[,par_index$pi_logit])/(1 + exp(month_data[,par_index$pi_logit]))
+month_data[,par_index$misclass[1]] =
+    exp(month_data[,par_index$misclass[1]])/(1 + exp(month_data[,par_index$misclass[1]]))
+month_data[,par_index$misclass[2:3]] = exp(month_data[,par_index$misclass[2:3]])/(1 +
+                                           exp(month_data[,par_index$misclass[2]]) +
+                                           exp(month_data[,par_index$misclass[3]]))
+month_data[,par_index$misclass[4]] =
+    exp(month_data[,par_index$misclass[4]])/(1 + exp(month_data[,par_index$misclass[4]]))
+
+# Year transformation
+year_data[,par_index$pi_logit] =
+    exp(year_data[,par_index$pi_logit])/(1 + exp(year_data[,par_index$pi_logit]))
+year_data[,par_index$misclass[1]] =
+    exp(year_data[,par_index$misclass[1]])/(1 + exp(year_data[,par_index$misclass[1]]))
+year_data[,par_index$misclass[2:3]] = exp(year_data[,par_index$misclass[2:3]])/(1 +
+                                           exp(year_data[,par_index$misclass[2]]) +
+                                           exp(year_data[,par_index$misclass[3]]))
+year_data[,par_index$misclass[4]] =
+    exp(year_data[,par_index$misclass[4]])/(1 + exp(year_data[,par_index$misclass[4]]))
+
+# YearTwo transformation
+year_2_data[,par_index$pi_logit] =
+    exp(year_2_data[,par_index$pi_logit])/(1 + exp(year_2_data[,par_index$pi_logit]))
+year_2_data[,par_index$misclass[1]] =
+    exp(year_2_data[,par_index$misclass[1]])/(1 + exp(year_2_data[,par_index$misclass[1]]))
+year_2_data[,par_index$misclass[2:3]] = exp(year_2_data[,par_index$misclass[2:3]])/(1 +
+                                           exp(year_2_data[,par_index$misclass[2]]) +
+                                           exp(year_2_data[,par_index$misclass[3]]))
+year_2_data[,par_index$misclass[4]] =
+    exp(year_2_data[,par_index$misclass[4]])/(1 + exp(year_2_data[,par_index$misclass[4]]))
+
+# ------------------------------------------------------------------------------
+
 
 VP <- vector(mode="list", length = length(labels))
 for(i in 1:length(trueValues)) {
