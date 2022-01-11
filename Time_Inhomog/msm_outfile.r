@@ -27,26 +27,6 @@ labels <- c('baseline S1 (well)   --->   S2 (mild)',
             'P( observed state 2 | true state 3 )',
             'P( initial state 2 )','P( initial state 3 )')
 
-
-month_data = matrix(data=-1, nrow = nFrames, ncol = 21)
-year_data = matrix(data=-1, nrow = nFrames, ncol = 21)
-year_2_data = matrix(data=-1, nrow = nFrames, ncol = 21)
-
-for (i in 1:nFrames) {
-
-  print(i)
-
-  load(paste0("Model_out/msm/Month/Output_msm", i, ".rda"))
-  month_data[i,] = c(Output_msm$opt$par)
-
-  load(paste0("Model_out/msm/Year/Output_msm", i, ".rda"))
-  year_data[i,] = c(Output_msm$opt$par)
-
-  load(paste0("Model_out/msm/YearTwo/Output_msm", i, ".rda"))
-  year_2_data[i,] = c(Output_msm$opt$par)
-
-}
-
 par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
 
 trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
@@ -57,9 +37,113 @@ trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
                   c(  -4.59512, -1.15268, -2.751535, -2.090741),
                   c( -3.178054, -4.59512))
 
+# trueErrors <- c( .01, .24, .06, .11)
+# trueInitProbs <- c( .04, .01)
+
+month_data = matrix(data=-1, nrow = nFrames, ncol = 21)
+year_data = matrix(data=-1, nrow = nFrames, ncol = 21)
+year_2_data = matrix(data=-1, nrow = nFrames, ncol = 21)
+
+cred_set = vector(mode = "list", length = length(trueValues))
+
+# For each parameter, there are 3 discretizations to consider
+for(i in 1:length(cred_set)) {
+    cred_set[[i]] = vector(mode = "list", length = 3)
+    cred_set[[i]][[1]] = cred_set[[i]][[2]] = cred_set[[i]][[3]] =
+            data.frame('lower' = c(-1), 'upper' = c(-1))
+}
+
+# -----------------------------------------------------------------------------
+# Load Data and Find Credible Sets --------------------------------------------
+# -----------------------------------------------------------------------------
+
+for (i in 1:nFrames) {
+
+  print(i)
+
+  load(paste0("Model_out/msm/Month/Output_msm", i, ".rda"))
+  month_data[i,] = c(Output_msm$opt$par)
+
+  # Calculating credible sets (Month)
+  ind = 1
+  for(l in 1:3) {
+      for(r in c(5,13,10,14,15)){
+          cred_set[[ind]][[1]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+          cred_set[[ind]][[1]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+          ind = ind + 1
+      }
+  }
+  # Probabilities
+  ind = 1
+  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+  for(l in par_index$misclass) {
+      cred_set[[l]][[1]][i,1] = lowerBounds[ind]
+      cred_set[[l]][[1]][i,2] = upperBounds[ind]
+      ind = ind + 1
+  }
+  cred_set[[20]][[1]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[1]][i,2] = Output_msm$ci[36,2]
+  cred_set[[21]][[1]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[1]][i,2] = Output_msm$ci[37,2]
+
+ # -----------------------------------------------------------------------------
+
+  load(paste0("Model_out/msm/Year/Output_msm", i, ".rda"))
+  year_data[i,] = c(Output_msm$opt$par)
+
+  # Calculating credible sets (Year)
+  ind = 1
+  for(l in 1:3) {
+      for(r in c(5,13,10,14,15)){
+          cred_set[[ind]][[2]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+          cred_set[[ind]][[2]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+          ind = ind + 1
+      }
+  }
+  # Probabilities
+  ind = 1
+  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+  for(l in par_index$misclass) {
+      cred_set[[l]][[2]][i,1] = lowerBounds[ind]
+      cred_set[[l]][[2]][i,2] = upperBounds[ind]
+      ind = ind + 1
+  }
+  cred_set[[20]][[2]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[2]][i,2] = Output_msm$ci[36,2]
+  cred_set[[21]][[2]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[2]][i,2] = Output_msm$ci[37,2]
+
+ # -----------------------------------------------------------------------------
+
+  load(paste0("Model_out/msm/YearTwo/Output_msm", i, ".rda"))
+  year_2_data[i,] = c(Output_msm$opt$par)
+
+  # Calculating credible sets (YearTwo)
+  ind = 1
+  for(l in 1:3) {
+      for(r in c(5,13,10,14,15)){
+          cred_set[[ind]][[3]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+          cred_set[[ind]][[3]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+          ind = ind + 1
+      }
+  }
+
+  # Probabilities
+  ind = 1
+  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+  for(l in par_index$misclass) {
+      cred_set[[l]][[3]][i,1] = lowerBounds[ind]
+      cred_set[[l]][[3]][i,2] = upperBounds[ind]
+      ind = ind + 1
+  }
+  cred_set[[20]][[3]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[3]][i,2] = Output_msm$ci[36,2]
+  cred_set[[21]][[3]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[3]][i,2] = Output_msm$ci[37,2]
+
+}
+
 # ------------------------------------------------------------------------------
 # Doing the inverse logit ------------------------------------------------------
 # ------------------------------------------------------------------------------
+
 # trueValues transformation
 trueValues[par_index$pi_logit] =
   exp(trueValues[par_index$pi_logit])/(1 + exp(trueValues[par_index$pi_logit]))
@@ -103,24 +187,45 @@ year_2_data[,par_index$misclass[2:3]] = exp(year_2_data[,par_index$misclass[2:3]
 year_2_data[,par_index$misclass[4]] =
     exp(year_2_data[,par_index$misclass[4]])/(1 + exp(year_2_data[,par_index$misclass[4]]))
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Calculating Coverage --------------------------------------------------------
+# -----------------------------------------------------------------------------
 
+cov_df = matrix(ncol = 3, nrow = length(trueValues))
+colnames(cov_df) = c("Month", "Year", "YearTwo")
+
+for(i in 1:length(trueValues)) {
+    val = trueValues[i]
+    for(j in 1:ncol(cov_df)) {
+        top = length(which(cred_set[[i]][[j]]$lower <= val & val <= cred_set[[i]][[j]]$upper))
+        bot = nrow(cred_set[[i]][[j]])
+        covrg = top/bot
+        cov_df[i,j] = covrg
+    }
+    print(paste0("Coverage for ", round(val, 3), " is: "))
+    cat('\t', '\t', '\t', "Month:   ", cov_df[i,1], '\n')
+    cat('\t', '\t', '\t', "Year:    ", cov_df[i,2], '\n')
+    cat('\t', '\t', '\t', "YearTwo: ", cov_df[i,3], '\n')
+}
+
+# ------------------------------------------------------------------------------
 
 VP <- vector(mode="list", length = length(labels))
 for(i in 1:length(trueValues)) {
-	print(trueValues[i])
+	print(round(trueValues[i], 3))
 	m = data.frame(y = month_data[,i], type = rep("Month", nrow(month_data)))
 	y = data.frame(y = year_data[,i], type = rep("Year", nrow(year_data)))
 	y2 = data.frame(y = year_2_data[,i], type = rep("Year_2", nrow(year_2_data)))
 
     plot_df = rbind(m,y,y2)
+    xlabel = paste0("Month: ", cov_df[i,1], ", Year: ", cov_df[i,2], ", YearTwo: ", cov_df[i,3])
 
     VP[[i]] = ggplot(plot_df, aes(x = type, y = y)) +
       geom_violin(trim=FALSE) +
       geom_boxplot(width=0.1) +
       ggtitle(labels[i]) +
       ylab('') +
-      xlab(trueValues[i]) +
+      xlab(xlabel) +
       geom_hline(yintercept=trueValues[i], linetype="dashed", color = "red") +
       theme(text = element_text(size = 7))
 
