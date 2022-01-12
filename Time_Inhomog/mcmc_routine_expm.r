@@ -83,25 +83,19 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 
       P = expm((t_i[k] - t_i[k-1]) * Q(x_i[k-1,], beta)) # Used to be just Q_i
 
-      if (y_i[k] != 99) {
-          if (y_i[k] < 4) {
+      if (y_i[k] != 4) {
+          if (y_i[k] != 99) {
               val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-          } else { # Death is observed
-              val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+          } else{
+              val = f_i %*% P %*% diag(resp_fnc[, 1:3])
           }
-
-          norm_val = sqrt(sum(val^2))
-      	  f_i = val / norm_val
-      	  log_norm = log_norm + log(norm_val)
-      } else { # sum over all possibilities for likelihood (jackson2011)
-          for(w in 1:3) {
-              val = f_i %*% P %*% diag(resp_fnc[, w])
-
-              norm_val = sqrt(sum(val^2))
-          	  f_i = val / norm_val
-          	  log_norm = log_norm + log(norm_val)
-          }
+      } else { # Death is observed
+          val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
       }
+
+      norm_val = sqrt(sum(val^2))
+  	  f_i = val / norm_val
+  	  log_norm = log_norm + log(norm_val)
     }
 
     return(log(sum(f_i)) + log_norm)
@@ -110,7 +104,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
     log_prior_dens = dmvnorm( x=pars, mean=mean, sigma=sd, log=T)
-  return(log_total_val + log_prior_dens)
+    return(log_total_val + log_prior_dens)
 
 }
 
