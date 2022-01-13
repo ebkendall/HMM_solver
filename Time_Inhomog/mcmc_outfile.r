@@ -13,6 +13,7 @@ folder = as.numeric(args[1])
 model_name = c('deSolve', 'expm')
 sub_folder = c('Year/', 'YearTwo/') #'Month/',
 for_length = c(1, 2)
+loopLength = for_length[folder]
 
 dir = paste0('Model_out/', model_name[folder], '/')
 
@@ -81,7 +82,7 @@ for(i in 1:length(cred_set)) {
     } else {
         # Now there are 3 credible sets per parameter for different discretizations
         cred_set[[i]] = vector(mode = 'list', length = length(sub_folder))
-        for(j in 1:length(cred_set)) {cred_set[[i]][[j]] = data.frame('lower' = c(-1), 'upper' = c(-1))}
+        for(j in 1:length(cred_set[[i]])) {cred_set[[i]][[j]] = data.frame('lower' = c(-1), 'upper' = c(-1))}
     }
 
 }
@@ -90,7 +91,6 @@ for (i in 1:50) {
     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
     # If its deSolve, for_length[folder] = 1
     # If its expm, for_length[folder] = 3 b/c of the 3 discretizations
-    loopLength = for_length[folder]
     for(w in 1:loopLength) {
         if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(i),'.rda')}
 
@@ -139,7 +139,7 @@ if (folder == 1) {
         print(paste0("Coverage for parameter ", val, " is: ", covrg))
     }
 } else {
-    cov_df = matrix(ncol = length(sub_folder)); colnames(cov_df) = sub_folder
+    cov_df = matrix(ncol = length(sub_folder), nrow=length(true_par)); colnames(cov_df) = sub_folder
     for(i in 1:length(true_par)) {
         val = true_par[i]
         for(j in 1:ncol(cov_df)) {
@@ -157,22 +157,20 @@ if (folder == 1) {
 # -----------------------------------------------------------------------------
 
 index_seeds = 1:50
-post_means = vector(mode = "list", length = length(sub_folder))
+post_means <- vector(mode = "list", length = length(sub_folder))
 chain_list <- vector(mode = "list", length = length(sub_folder))
 
 # If folder == 1, then we will only populate the first entry of the list
 for(i in 1:length(chain_list)) {chain_list[[i]] = vector(mode = "list", length = length(index_seeds))}
 for(i in 1:length(post_means)) {post_means[[i]] = matrix(nrow = length(index_seeds), ncol = length(labels))}
 
-ind = 0
 for(seed in index_seeds){
     file_name = paste0(dir,'mcmc_out_',toString(seed),'.rda')
 
-    for(w in 1:for_length[folder]) {
-        if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(i),'.rda')}
+    for(w in 1:loopLength) {
+        if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(seed),'.rda')}
 
         load(file_name)
-        ind = ind + 1
 
         print(mcmc_out$accept)
 
@@ -189,7 +187,7 @@ for(seed in index_seeds){
 
 
       	chain_list[[w]][[seed]] = mcmc_out$chain[index_post,]
-    	post_means[[w]][seed,] <- colMeans(mcmc_out$chain[index_post,])
+        post_means[[w]][seed,] <- colMeans(mcmc_out$chain[index_post,])
     }
 }
 
@@ -197,7 +195,7 @@ for(seed in index_seeds){
 pdf(paste0('Plots/mcmc_', model_name[folder], '.pdf'))
 par(mfrow=c(4, 2))
 
-for (q in 1:for_length[folder]) {
+for (q in 1:loopLength) {
     stacked_chains = do.call( rbind, chain_list[[q]])
     par_mean = par_median = upper = lower = rep( NA, ncol(stacked_chains))
     VP <- vector(mode="list", length = length(labels))
@@ -216,7 +214,7 @@ for (q in 1:for_length[folder]) {
 
     	hist( stacked_chains[,r], breaks=sqrt(nrow(stacked_chains)), ylab=NA, main=NA,
     	      freq=F, xlab=paste0('Mean = ',toString(par_mean[r]),
-    				                    ' Median = ',toString(par_median[r])))
+    	                           ' Median = ',toString(par_median[r])))
     	abline( v=upper[r], col='red', lwd=2, lty=2)
     	abline( v=true_par[r], col='green', lwd=2, lty=2)
     	abline( v=lower[r], col='purple', lwd=2, lty=2)
@@ -230,10 +228,9 @@ for(r in 1:length(labels)) {
     yVar = disc_type = x_label = NULL
     if(folder == 2) {
         yVar = c(post_means[[1]][,r], post_means[[2]][,r]) #, post_means[[3]][,r])
-        disc_type = c(rep("Month", nrow(post_means[[1]])),
-                      rep("Year", nrow(post_means[[2]])),
-                      rep("YearTwo", nrow(post_means[[3]])))
-        x_label = paste0("Month: ", cov_df[i,1], ", Year: ", cov_df[i,2]) #, ", YearTwo: ", cov_df[i,3])
+        disc_type = c(rep("Year", nrow(post_means[[1]])),
+                      rep("YearTwo", nrow(post_means[[2]]))) # rep("Month", nrow(post_means[[1]])),
+        x_label = paste0("Year: ", cov_df[r,1], ", YearTwo: ", cov_df[r,2]) #, ", Month: ", cov_df[i,1])
     } else {
         yVar = post_means[[1]][,r]
         disc_type = rep("Continuous", nrow(post_means[[1]]))
@@ -245,7 +242,7 @@ for(r in 1:length(labels)) {
       geom_violin(trim=FALSE) +
       geom_boxplot(width=0.1) +
       ggtitle(labels[r]) +
-      ylab(paste0("Parameter Value: ", true_par[r])) +
+      ylab(paste0("Parameter Value: ", round(true_par[r], 3))) +
       xlab(x_label) +
       geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
       theme(text = element_text(size = 7))
