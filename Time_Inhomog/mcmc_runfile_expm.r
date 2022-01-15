@@ -22,9 +22,9 @@ prior_par = data.frame( prior_mean=rep( 0, length(init_par)),
 
 data_files <- c("Year", "YearTwo", "Month")
 
-for (folder in 1:3) {
+for (folder in 1:2) {
 
-    Dir <- paste0("../DataGeneration/DataOut/", data_files[folder], "/")
+    Dir <- paste0("DataGeneration/DataOut/", data_files[folder], "/")
     load(paste0(Dir,'cavData',ind,'.rda'))
 
     temp_data = as.matrix(cavData); rownames(temp_data) = NULL
@@ -43,6 +43,6 @@ for (folder in 1:3) {
 
     e_time = Sys.time() - s_time; print(e_time)
 
-    save(mcmc_out, file = paste0('Model_out/expm/', data_files[folder] ,'/mcmc_out_',ind,'.rda'))
+    save(mcmc_out, file = paste0('Model_out/', data_files[folder] ,'/mcmc_out_',ind,'.rda'))
 
 }

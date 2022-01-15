@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -o Model_out/expm/a_out/trial%a.out
+#SBATCH -o Model_out/a_out/trial%a.out
 #SBATCH --array=1-50
 #SBATCH --nodes=1
 #SBATCH --ntasks=17
@@ -15,4 +15,4 @@ export OMP_NUM_THREADS=17
 
 module load R/4.0
 
-R CMD BATCH --no-save mcmc_runfile_expm.r Model_out/expm/a_out/trial${SLURM_ARRAY_TASK_ID}.Rout
+R CMD BATCH --no-save mcmc_runfile_expm.r Model_out/a_out/trial${SLURM_ARRAY_TASK_ID}.Rout
