@@ -73,21 +73,18 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
     x_i = x[id == i,,drop = F]
     t_i = t[id == i]
 
-    # NOTE: The below only exists because of time homogeneous
-    # Q_i = Q(x_i[1,], beta)
-
     f_i = init %*% diag(resp_fnc[, y_i[1]])
-	log_norm = 0
+	  log_norm = 0
 
     for(k in 2:length(t_i)) {
 
-      P = expm((t_i[k] - t_i[k-1]) * Q(x_i[k-1,], beta)) # Used to be just Q_i
+      P = expm((t_i[k] - t_i[k-1]) * Q(x_i[k-1,], beta))
 
       if (y_i[k] != 4) {
           if (y_i[k] != 99) {
-              val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
+              val = f_i %*% P %*% diag(resp_fnc[, y_i[k]]) # observation
           } else{
-              val = f_i %*% P %*% diag(rowSums(resp_fnc[, 1:3]))
+              val = f_i %*% P %*% diag(rowSums(resp_fnc[, 1:3])) # censored row
           }
       } else { # Death is observed
           val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
@@ -169,8 +166,8 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
         accept[j] = accept[j] +1
       }
       chain[ttt,ind_j] = pars[ind_j]
-      print("Parameters Accepted")
-      print(pars)
+      # print("Parameters Accepted")
+      # print(pars)
 
       # Proposal tuning scheme ------------------------------------------------
       if(ttt < burnin){

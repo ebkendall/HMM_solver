@@ -1,5 +1,3 @@
-# This script file produces trace plots and histograms of the mcmc output files
-# To run from command line...
 requiredPackages = c('tidyverse','gridExtra')
 for(p in requiredPackages){
   if(!require(p,character.only = TRUE)) install.packages(p)
@@ -74,7 +72,6 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # Calculating Credible Sets ---------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
 cred_set = vector(mode = 'list', length = length(true_par))
 for(i in 1:length(cred_set)) {
     if(folder == 1) {
@@ -93,7 +90,6 @@ for (i in 1:50) {
     # If its expm, for_length[folder] = 3 b/c of the 3 discretizations
     for(w in 1:loopLength) {
         if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(i),'.rda')}
-
 	    load(file_name)
 
         # Inverse logit to convert back to probabilities

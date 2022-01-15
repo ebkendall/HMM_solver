@@ -86,9 +86,9 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
       if (y_i[k] != 4) {
           if (y_i[k] != 99) {
               val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-          } else{i
-	      temp = diag(0,4)
-	      temp[1:3, 1:3] = resp_fnc[1:3, 1:3]
+          } else{
+	            temp = diag(0,4)
+	            temp[1:3, 1:3] = resp_fnc[1:3, 1:3]
               val = f_i %*% P %*% temp
           }
       } else { # Death is observed
