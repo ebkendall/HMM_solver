@@ -20,7 +20,7 @@ package.install = function(pack) {
 }
 
 floor_new <- function(t,p) {
-    new_time = 0
+    new_time = NULL
     if(p == 1) {
       new_time = t
     } else if (p==2) {
@@ -63,7 +63,7 @@ package.install("msm")
 
 num_iter = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 
-# p = 1 --> update every day
+# p = 1 --> update continuous
 # p = 2 --> update every month
 # p = 3 --> update every year
 # p = 4 --> update every twoYear
