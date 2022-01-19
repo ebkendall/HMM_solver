@@ -1,13 +1,11 @@
 # Let dis1 be the true discretization, and dis2 is the estimated on
-stepFunction <- function(dis1, dis2) {
-  
-  #stepFunctionBase(dis1, dis2)
+stepFunction <- function(dis1, dis2, x_low, x_up) {
   
   set.seed(10)
   
   #creating xlim based on the larger discritization
   maxDis= max(c(dis1, dis2))
-  xlimit = 1#ceiling(10 * maxDis)
+  xlimit = 1
   
   dis1seq = seq(0, xlimit, by = dis1)
   dis2seq = seq(0, xlimit, by = dis2)
@@ -59,13 +57,15 @@ stepFunction <- function(dis1, dis2) {
 # - NEW STEP FUNCTION THAT IS MINIMIZING THE SQUARED ERROR LOSS -
 # ---------------------------------------------------------------
 
+new_step_fnc <- function(x_lim, dis1, dis2)
+
 t_i = seq(-1000,999.99, by = 0.01)
 
 y_i = floor(t_i) 
 
 plot(x = NULL, y = NULL, ylim = c(-1,5), xlim = c(-1,5))
 lines(t_i, y_i)
-abline(h = 0); abline(v=0)
+abline(h = 0, col = "green"); abline(v=0, col = "green")
 
 X = cbind(1, t_i)
 
@@ -100,10 +100,8 @@ points(t_i_half, y_i, col = "red")
 
 # Testing the heights
 temp = c(unique(yhat_half))
-seq1 = kronecker(c(-100:99),c(1,1))
+seq1 = kronecker(c(-1000:999),c(1,1))
 temp = temp - seq1; temp
 sum((temp^2))
-tempPerf = rep(c(-0.25,0.25),3)
-sum((tempPerf^2))
 
 # Note: it is minimizing over the entire region.
