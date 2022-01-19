@@ -24,7 +24,7 @@ floor_new <- function(t,p) {
     if(p == 1) {
       new_time = t
     } else if (p==2) {
-      monthSeq = seq(0,1,1/12)
+      monthSeq = seq(0,1,1/6)
       yearNum = floor(t)
       timeInd = max(which(monthSeq <= (t - yearNum))) #selects which month to go to
       new_time = yearNum + monthSeq[timeInd]
