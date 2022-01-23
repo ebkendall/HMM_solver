@@ -50,7 +50,7 @@ censor_times <- function(t, p) {
   if(p == 1) {
     new_time = t
   } else if (p==2) {
-    new_time = seq(min_t, max_t, by = 1/12)
+    new_time = seq(min_t, max_t, by = 1/6)
   } else if (p==3) {
     new_time = seq(min_t, max_t, by = 1)
   } else {
@@ -81,13 +81,13 @@ dt <- 1/365
 # The years and disc_time columns were both centered at round(mean(years),0) = 4 in the cav data set.
 # These are the true parameter values for the uncentered data ( intercept - coef*mean ).
 
-trueValues <- c(c(matrix(c(-2.54,  0.11, -0.56,
-                           -2.94, -0.24,  0.15,
-                           -1.10, -0.15, -0.03,
-                           -3.92,  0.23,  0.21,
-                           -2.12,  0.08,  1.17), ncol=3, byrow=T)),
-                c(  -4.59512, -1.15268, -2.751535, -2.090741),
-                c( -3.178054, -4.59512))
+trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
+                         -1.17308794, -5.10636947, -0.96162312,
+                         -1.71474254, -0.04338819,  0.83882558,
+                         -2.08300714,  0.03824367, -2.75345311,
+                         -2.42208380,  0.11315485,  1.76897841), ncol=3, byrow=T)),
+                  c(  -5.60251814, -0.84455697, -2.56906519, -2.12629033),
+                  c( -6.95125291, -7.07504453))
 
 par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21)
 
