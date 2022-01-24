@@ -74,7 +74,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
     t_i = t[id == i]
 
     f_i = init %*% diag(resp_fnc[, y_i[1]])
-	  log_norm = 0
+	log_norm = 0
 
     for(k in 2:length(t_i)) {
 

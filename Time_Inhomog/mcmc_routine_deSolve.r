@@ -99,6 +99,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = "deSolve") %dopar% {
 
 	val = 1
+    disc = F
 
 	y_i = y[id == i]
     x_i = x[id == i,"sex",drop = F]
