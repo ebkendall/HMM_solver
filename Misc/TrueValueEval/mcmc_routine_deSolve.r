@@ -1,40 +1,38 @@
-# package.install = function(pack) {
-#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-#
-#   # name of package to install / load
-#   pack = pack
-#
-#   if (pack %in% rownames(installed.packages())) {
-#     library(pack, character.only=T)
-#   } else {
-#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     } else {
-#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     }
-#   }
-# }
-#
-# # This script contains the code for the mcmc and its helper functions
-#
-# package.install("mvtnorm")
-# package.install("foreach")
-# package.install("doParallel")
-# package.install("msm")
-# package.install("deSolve")
-# package.install("expm")
-# package.install("foreach")
-# package.install("doParallel")
+package.install = function(pack) {
+  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+
+  # name of package to install / load
+  pack = pack
+
+  if (pack %in% rownames(installed.packages())) {
+    library(pack, character.only=T)
+  } else {
+    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    } else {
+      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    }
+  }
+}
+
+# This script contains the code for the mcmc and its helper functions
+
+package.install("mvtnorm")
+package.install("foreach")
+package.install("doParallel")
+package.install("msm")
+package.install("deSolve")
+package.install("expm")
 
 
-library(mvtnorm, quietly=T)
-library(foreach, quietly=T)
-library(doParallel, quietly=T)
-
-library(msm)
-library(deSolve)
-library(expm)
+# library(mvtnorm, quietly=T)
+# library(foreach, quietly=T)
+# library(doParallel, quietly=T)
+#
+# library(msm)
+# library(deSolve)
+# library(expm)
 
 Q <- function(t,x_ik,beta){
 
@@ -80,7 +78,8 @@ model_t <- function(t,p,parms) {
 
 }
 
-fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
+
+fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, id) {
 
   init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]), 0)
   init = init_logit / sum(init_logit)
@@ -91,15 +90,20 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 
   resp_fnc = resp_fnc / rowSums(resp_fnc)
 
+  mu = pars[par_index$mu]
+  sigma = pars[par_index$sigma]
+
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
   log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = "deSolve") %dopar% {
 
 	val = 1
-    disc == F
+    disc = F
 
-	y_i = y[id == i]
+	y_1_i = y_1[id == i]
+    y_2_i = y_2[id == i]
+
     x_i = x[id == i,"sex",drop = F]
     if(disc==T) disc_t_i = x[id == i,"disc_time",drop = F]
   	t_i = t[id == i]
@@ -116,15 +120,13 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
                     0,  0, out[2,"p8"], out[2,"p9"],
                     0,  0,  0,  1), nrow = 4, byrow = T)
 
-      if(y_i[k] < 4) {
-        val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-      } else {
-          if(disc==T){
-              val = f_i %*% P %*% Q(disc_t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
-          } else{
-              val = f_i %*% P %*% Q(t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
-          }
-      }
+      d_1 = dnorm(y_2_i[k], mean = mu[1], sd = sigma)
+      d_2 = dnorm(y_2_i[k], mean = mu[2], sd = sigma)
+      d_3 = dnorm(y_2_i[k], mean = mu[3], sd = sigma)
+
+      D_i = diag(c(d_1,d_2,d_3) * resp_fnc[, y_i[k]])
+
+      val = f_i %*% P %*% D_i
 
       norm_val = sqrt(sum(val^2))
       f_i = val / norm_val
@@ -142,6 +144,14 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   return(log_total_val + log_prior_dens)
 
 }
+
+
+fn_log_post_misclass <- function(pars, prior_par, par_index, x, y_1, y_2, t, id) {
+
+  # copy from Time_Inhomogeneous folder
+
+}
+
 
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters

@@ -25,7 +25,8 @@ cavData <- data.frame(  "ptnum" = temp$PTNUM,
 
 temp_data = as.matrix(cavData); rownames(temp_data) = NULL
 id = temp_data[,"ptnum"]
-y = temp_data[,"state"]
+y_1 = temp_data[,"state"]
+y_2 = 
 x = temp_data[, c("years", "sex"), drop=F]
 t = temp_data[,"years"]
 steps = 20000
