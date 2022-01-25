@@ -1,7 +1,6 @@
 source("mcmc_routine_new.r")
 
-# ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-ind = 10
+ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(ind)
 
 trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
@@ -43,4 +42,4 @@ mcmc_out = mcmc_routine(y_1, y_2, x, t, id, init_par, prior_par, par_index,
 
 e_time = Sys.time() - s_time; print(e_time)
 
-save(mcmc_out, file = paste0("Model_out/Old/mcmc_out_", ind, ".rda"))
+save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, ".rda"))

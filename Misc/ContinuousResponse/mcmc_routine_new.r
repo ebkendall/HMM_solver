@@ -1,38 +1,38 @@
-# package.install = function(pack) {
-#   local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-#
-#   # name of package to install / load
-#   pack = pack
-#
-#   if (pack %in% rownames(installed.packages())) {
-#     library(pack, character.only=T)
-#   } else {
-#     if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     } else {
-#       install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-#       library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-#     }
-#   }
-# }
-#
-# # This script contains the code for the mcmc and its helper functions
-#
-# package.install("mvtnorm")
-# package.install("foreach")
-# package.install("doParallel")
-# package.install("msm")
-# package.install("deSolve")
-# package.install("expm")
+package.install = function(pack) {
+  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+
+  # name of package to install / load
+  pack = pack
+
+  if (pack %in% rownames(installed.packages())) {
+    library(pack, character.only=T)
+  } else {
+    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    } else {
+      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
+      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
+    }
+  }
+}
+
+# This script contains the code for the mcmc and its helper functions
+
+package.install("mvtnorm")
+package.install("foreach")
+package.install("doParallel")
+package.install("msm")
+package.install("deSolve")
+package.install("expm")
 
 
-library(mvtnorm, quietly=T)
-library(foreach, quietly=T)
-library(doParallel, quietly=T)
-
-library(msm)
-library(deSolve)
-library(expm)
+# library(mvtnorm, quietly=T)
+# library(foreach, quietly=T)
+# library(doParallel, quietly=T)
+#
+# library(msm)
+# library(deSolve)
+# library(expm)
 
 Q <- function(t,x_ik,beta){
 
@@ -107,12 +107,16 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, i
     x_i = x[id == i,"sex",drop = F]
 
     if(disc==T) disc_t_i = x[id == i,"disc_time",drop = F]
-    
+
   	t_i = t[id == i]
 
- 	f_i = init %*% diag(resp_fnc[, y_i[1]])
-	log_norm = 0
+    d_1 = dnorm(y_2_i[1], mean = mu[1], sd = sigma[1])
+    d_2 = dnorm(y_2_i[1], mean = mu[2], sd = sigma[2])
+    d_3 = dnorm(y_2_i[1], mean = mu[3], sd = sigma[3])
+    d_4 = dnorm(y_2_i[1], mean = mu[4], sd = sigma[4])
 
+ 	f_i = init %*% diag(c(d_1,d_2,d_3,d_4) * resp_fnc[, y_1_i[1]])
+	log_norm = 0
     for(k in 2:length(t_i)) {
 
       out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t, parms = list(b=beta, x_ik = x_i[k,]))
@@ -122,12 +126,12 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, i
                     0,  0, out[2,"p8"], out[2,"p9"],
                     0,  0,  0,  1), nrow = 4, byrow = T)
 
-      d_1 = dnorm(y_2_i[k], mean = mu[1], sd = sigma)
-      d_2 = dnorm(y_2_i[k], mean = mu[2], sd = sigma)
-      d_3 = dnorm(y_2_i[k], mean = mu[3], sd = sigma)
-      d_4 = dnorm(y_2_i[k], mean = mu[4], sd = sigma)
+      d_1 = dnorm(y_2_i[k], mean = mu[1], sd = sigma[1])
+      d_2 = dnorm(y_2_i[k], mean = mu[2], sd = sigma[2])
+      d_3 = dnorm(y_2_i[k], mean = mu[3], sd = sigma[3])
+      d_4 = dnorm(y_2_i[k], mean = mu[4], sd = sigma[4])
 
-      D_i = diag(c(d_1,d_2,d_3,d_4) * resp_fnc[, y_i[k]])
+      D_i = diag(c(d_1,d_2,d_3,d_4) * resp_fnc[, y_1_i[k]])
 
       val = f_i %*% P %*% D_i
 
