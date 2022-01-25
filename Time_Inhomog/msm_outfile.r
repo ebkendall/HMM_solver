@@ -37,6 +37,14 @@ trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
                   c(  -5.60251814, -0.84455697, -2.56906519, -2.12629033),
                   c( -6.95125291, -7.07504453))
 
+# trueValues <-  c(c(matrix(c(-2.54,  0.11, -0.56,
+#                             -2.94, -0.24,  0.15,
+#                             -1.10, -0.15, -0.03,
+#                             -3.92,  0.23,  0.21,
+#                             -2.12,  0.08,  1.17), ncol=3, byrow=T)),
+#                  c(  -4.59512, -1.15268, -2.751535, -2.090741),
+#                  c( -3.178054, -4.59512))
+
 # trueErrors <- c( .01, .24, .06, .11)
 # trueInitProbs <- c( .04, .01)
 
@@ -57,87 +65,100 @@ for(i in 1:length(cred_set)) {
 # Load Data and Find Credible Sets --------------------------------------------
 # -----------------------------------------------------------------------------
 
+row_ind1 = row_ind2 = row_ind3 = 1
+
 for (i in 1:nFrames) {
 
   print(i)
 
   load(paste0("Model_out/msm/Month/Output_msm", i, ".rda"))
-  month_data[i,] = c(Output_msm$opt$par)
+  if (length(Output_msm$QmatricesSE) != 0) { # means a non poisitive definite matrix
+      month_data[row_ind1,] = c(Output_msm$opt$par)
 
-  # Calculating credible sets (Month)
-  ind = 1
-  for(l in 1:3) {
-      for(r in c(5,13,10,14,15)){
-          cred_set[[ind]][[1]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
-          cred_set[[ind]][[1]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+      # Calculating credible sets (Month)
+      ind = 1
+      for(l in 1:3) {
+          for(r in c(5,13,10,14,15)){
+              cred_set[[ind]][[1]][row_ind1,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+              cred_set[[ind]][[1]][row_ind1,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+              ind = ind + 1
+          }
+      }
+      # Probabilities
+      ind = 1
+      lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+      upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+      for(l in par_index$misclass) {
+          cred_set[[l]][[1]][row_ind1,1] = lowerBounds[ind]
+          cred_set[[l]][[1]][row_ind1,2] = upperBounds[ind]
           ind = ind + 1
       }
+      cred_set[[20]][[1]][row_ind1,1] = Output_msm$ci[36,1]; cred_set[[20]][[1]][row_ind1,2] = Output_msm$ci[36,2]
+      cred_set[[21]][[1]][row_ind1,1] = Output_msm$ci[37,1]; cred_set[[21]][[1]][row_ind1,2] = Output_msm$ci[37,2]
+
+      row_ind1 = row_ind1 + 1
   }
-  # Probabilities
-  ind = 1
-  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
-  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
-  for(l in par_index$misclass) {
-      cred_set[[l]][[1]][i,1] = lowerBounds[ind]
-      cred_set[[l]][[1]][i,2] = upperBounds[ind]
-      ind = ind + 1
-  }
-  cred_set[[20]][[1]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[1]][i,2] = Output_msm$ci[36,2]
-  cred_set[[21]][[1]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[1]][i,2] = Output_msm$ci[37,2]
+
 
  # -----------------------------------------------------------------------------
 
   load(paste0("Model_out/msm/Year/Output_msm", i, ".rda"))
-  year_data[i,] = c(Output_msm$opt$par)
+  if (length(Output_msm$QmatricesSE) != 0) {
+      year_data[row_ind2,] = c(Output_msm$opt$par)
 
-  # Calculating credible sets (Year)
-  ind = 1
-  for(l in 1:3) {
-      for(r in c(5,13,10,14,15)){
-          cred_set[[ind]][[2]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
-          cred_set[[ind]][[2]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+      # Calculating credible sets (Year)
+      ind = 1
+      for(l in 1:3) {
+          for(r in c(5,13,10,14,15)){
+              cred_set[[ind]][[2]][row_ind2,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+              cred_set[[ind]][[2]][row_ind2,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+              ind = ind + 1
+          }
+      }
+      # Probabilities
+      ind = 1
+      lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+      upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+      for(l in par_index$misclass) {
+          cred_set[[l]][[2]][row_ind2,1] = lowerBounds[ind]
+          cred_set[[l]][[2]][row_ind2,2] = upperBounds[ind]
           ind = ind + 1
       }
-  }
-  # Probabilities
-  ind = 1
-  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
-  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
-  for(l in par_index$misclass) {
-      cred_set[[l]][[2]][i,1] = lowerBounds[ind]
-      cred_set[[l]][[2]][i,2] = upperBounds[ind]
-      ind = ind + 1
-  }
-  cred_set[[20]][[2]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[2]][i,2] = Output_msm$ci[36,2]
-  cred_set[[21]][[2]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[2]][i,2] = Output_msm$ci[37,2]
+      cred_set[[20]][[2]][row_ind2,1] = Output_msm$ci[36,1]; cred_set[[20]][[2]][row_ind2,2] = Output_msm$ci[36,2]
+      cred_set[[21]][[2]][row_ind2,1] = Output_msm$ci[37,1]; cred_set[[21]][[2]][row_ind2,2] = Output_msm$ci[37,2]
 
+      row_ind2 = row_ind2 + 1
+  }
  # -----------------------------------------------------------------------------
 
   load(paste0("Model_out/msm/YearTwo/Output_msm", i, ".rda"))
-  year_2_data[i,] = c(Output_msm$opt$par)
+  if (length(Output_msm$QmatricesSE) != 0) {
+      year_2_data[row_ind3,] = c(Output_msm$opt$par)
 
-  # Calculating credible sets (YearTwo)
-  ind = 1
-  for(l in 1:3) {
-      for(r in c(5,13,10,14,15)){
-          cred_set[[ind]][[3]][i,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
-          cred_set[[ind]][[3]][i,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+      # Calculating credible sets (YearTwo)
+      ind = 1
+      for(l in 1:3) {
+          for(r in c(5,13,10,14,15)){
+              cred_set[[ind]][[3]][row_ind3,1] = Output_msm$Qmatrices[[l]][r] - 1.96*Output_msm$QmatricesSE[[l]][r]
+              cred_set[[ind]][[3]][row_ind3,2] = Output_msm$Qmatrices[[l]][r] + 1.96*Output_msm$QmatricesSE[[l]][r]
+              ind = ind + 1
+          }
+      }
+
+      # Probabilities
+      ind = 1
+      lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
+      upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
+      for(l in par_index$misclass) {
+          cred_set[[l]][[3]][row_ind3,1] = lowerBounds[ind]
+          cred_set[[l]][[3]][row_ind3,2] = upperBounds[ind]
           ind = ind + 1
       }
-  }
+      cred_set[[20]][[3]][row_ind3,1] = Output_msm$ci[36,1]; cred_set[[20]][[3]][row_ind3,2] = Output_msm$ci[36,2]
+      cred_set[[21]][[3]][row_ind3,1] = Output_msm$ci[37,1]; cred_set[[21]][[3]][row_ind3,2] = Output_msm$ci[37,2]
 
-  # Probabilities
-  ind = 1
-  lowerBounds = Output_msm$EmatricesL[[1]][c(5,2,10,7)]
-  upperBounds = Output_msm$EmatricesU[[1]][c(5,2,10,7)]
-  for(l in par_index$misclass) {
-      cred_set[[l]][[3]][i,1] = lowerBounds[ind]
-      cred_set[[l]][[3]][i,2] = upperBounds[ind]
-      ind = ind + 1
+      row_ind3 = row_ind3 + 1
   }
-  cred_set[[20]][[3]][i,1] = Output_msm$ci[36,1]; cred_set[[20]][[3]][i,2] = Output_msm$ci[36,2]
-  cred_set[[21]][[3]][i,1] = Output_msm$ci[37,1]; cred_set[[21]][[3]][i,2] = Output_msm$ci[37,2]
-
 }
 
 # ------------------------------------------------------------------------------
