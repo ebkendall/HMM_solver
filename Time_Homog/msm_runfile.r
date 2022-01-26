@@ -17,6 +17,7 @@ package.install = function(pack) {
 }
 
 package.install("msm")
+#library(msm)
 
 seedInd = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 
