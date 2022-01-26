@@ -4,18 +4,13 @@ for(p in requiredPackages){
   library(p,character.only = TRUE)
 }
 
-nFrames = 50
+nFrames = 100
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'b.l. S1 (well)   --->   S4 (dead)',
             'b.l. S2 (mild)   --->   S3 (severe)',
             'b.l. S2 (mild)   --->   S4 (dead)',
             'b.l. S3 (severe)   --->   S4 (dead)',
-            # 'iyears State 1 (well)   --->   State 2 (mild)',
-            # 'iyears State 1 (well)   --->   State 4 (dead)',
-            # 'iyears State 2 (mild)   --->   State 3 (severe)',
-            # 'iyears State 2 (mild)   --->   State 4 (dead)',
-            # 'iyears State 3 (severe)   --->   State 4 (dead)',
             'sex S1 (well)   --->   S2 (mild)',
             'sex S1 (well)   --->   S4 (dead)',
             'sex S2 (mild)   --->   S3 (severe)',
@@ -37,26 +32,13 @@ for (i in 1:nFrames) {
 
 }
 
-trueValues <- c(c(matrix(c(-2.54, -0.56,
-                           -2.94,  0.15,
-                           -1.10, -0.03,
-                           -3.92,  0.21,
-                           -2.12,  1.17), ncol=2, byrow=T)),
-                  c(  -4.59512, -1.15268, -2.751535, -2.090741),
-                  c( -3.178054, -4.59512))
-# 0*0.11,
-# 0*-0.24,
-# 0*-0.15,
-# 0*0.23 ,
-# 0*0.08 ,
-
-# for(i in 1:5) {
-#   day_data[,i] = day_data[,i] - day_data[,22]*trueValues[i+5]
-#   month_data[,i] = month_data[,i] - month_data[,22]*trueValues[i+5]
-#   year_data[,i] = year_data[,i] - year_data[,22]*trueValues[i+5]
-#   year_2_data[,i] = year_2_data[,i] - year_2_data[,22]*trueValues[i+5]
-# }
-
+trueValues <- c(c(matrix(c(-2.26568339, -0.49991746,
+                           -1.22022878, -0.82779213,
+                           -1.56180104,  0.73838829,
+                           -2.20978996, -1.83682627,
+                           -2.41222255,  1.63135439), ncol=2, byrow=T)),
+                  c(  -5.73343061, -0.78623894, -2.52747176, -2.12144526),
+                  c( -6.52842355, -6.15970066))
 
 
 pdf("Plots/msm.pdf", onefile = T)
