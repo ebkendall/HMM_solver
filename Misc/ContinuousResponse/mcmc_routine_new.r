@@ -83,10 +83,9 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, i
 
   init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]), 0)
   init = init_logit / sum(init_logit)
-  resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), 0, 0,
-                      exp(pars[par_index$misclass][2]), 1, exp(pars[par_index$misclass][3]), 0,
-                      0, exp(pars[par_index$misclass][4]),1, 0,
-                      0,   0,   0, 1), ncol=4, byrow=TRUE)
+  resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), 0,
+                      exp(pars[par_index$misclass][2]), 1, exp(pars[par_index$misclass][3]),
+                      0, exp(pars[par_index$misclass][4]),1), ncol=3, byrow=TRUE)
 
   resp_fnc = resp_fnc / rowSums(resp_fnc)
 
@@ -113,7 +112,6 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, i
     d_1 = dnorm(y_2_i[1], mean = mu[1], sd = sigma[1])
     d_2 = dnorm(y_2_i[1], mean = mu[2], sd = sigma[2])
     d_3 = dnorm(y_2_i[1], mean = mu[3], sd = sigma[3])
-    d_4 = dnorm(y_2_i[1], mean = mu[4], sd = sigma[4])
 
  	f_i = init %*% diag(c(d_1,d_2,d_3,d_4) * resp_fnc[, y_1_i[1]])
 	log_norm = 0
@@ -129,9 +127,8 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, x, y_1, y_2, t, i
       d_1 = dnorm(y_2_i[k], mean = mu[1], sd = sigma[1])
       d_2 = dnorm(y_2_i[k], mean = mu[2], sd = sigma[2])
       d_3 = dnorm(y_2_i[k], mean = mu[3], sd = sigma[3])
-      d_4 = dnorm(y_2_i[k], mean = mu[4], sd = sigma[4])
 
-      D_i = diag(c(d_1,d_2,d_3,d_4) * resp_fnc[, y_1_i[k]])
+      D_i = diag(c(d_1,d_2,d_3) * resp_fnc[, y_1_i[k]])
 
       val = f_i %*% P %*% D_i
 

@@ -88,9 +88,9 @@ trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
                          -2.08300714,  0.03824367, -2.75345311,
                          -2.42208380,  0.11315485,  1.76897841), ncol=3, byrow=T)),
                          c(  -5.60251814, -0.84455697, -2.56906519, -2.12629033),
-                         c( -6.95125291, -7.07504453),
-                         c(10, 20, 30, 40),
-                         rep(1,4))
+                         c( -6.95125291, -7.07504453), # these may be known with certainty
+                         c(10, 20, 30, 40), #only three states
+                         1) # needs to be just 1 sigma
 
 par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21, mu = 22:25, sigma = 26:29)
 
@@ -182,7 +182,7 @@ for(i in 1:N){
 
   # Sample an initial continuous mean
   m1 = trueValues[par_index$mu][trueState]
-  s1 = trueValues[par_index$sigma][trueState]
+  s1 = trueValues[par_index$sigma][trueState] # should be constant
   cont_resp = rnorm(1, m1, s1)
 
   # Sample the remaining states until death.
@@ -239,8 +239,11 @@ for(i in 1:N){
     state <- NULL
     resp <- NULL
     for(k in 1:n_i){
-        state <- c( state, tail( trueState[ years <= visitTimes[k] ], 1))
-        resp <-  c( resp, tail( cont_resp[ years <= visitTimes[k] ], 1))
+        temp_state = tail( trueState[ years <= visitTimes[k] ], 1)
+        state <- c( state, temp_state)
+        temp_resp <- rnorm(1, trueValues[par_index$mu][temp_state],
+                            trueValues[par_index$sigma])
+        resp <-  c( resp, temp_resp)
     }
 
     ptnum <- rep(i,n_i)
