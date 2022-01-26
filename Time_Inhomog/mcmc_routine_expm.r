@@ -84,7 +84,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
           if (y_i[k] != 99) {
               val = f_i %*% P %*% diag(resp_fnc[, y_i[k]]) # observation
           } else{
-              val = f_i %*% P %*% diag(rowSums(resp_fnc[, 1:3])) # censored row
+              val = f_i %*% P %*% diag(rowSums(resp_fnc[, 1:3])) # censored row ##### change this
           }
       } else { # Death is observed
           val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
