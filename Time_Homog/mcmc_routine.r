@@ -23,17 +23,7 @@ package.install("foreach")
 package.install("doParallel")
 package.install("msm")
 package.install("expm")
-package.install("foreach")
-package.install("doParallel")
-
-
-# library(mvtnorm, quietly=T)
-# library(foreach, quietly=T)
-# library(doParallel, quietly=T)
-# library("msm")
-# library("expm")
-# library("foreach")
-# library("doParallel")
+package.install("deSolve")
 
 Q <- function(x_ik,beta){
 
@@ -53,7 +43,33 @@ Q <- function(x_ik,beta){
   return(qmat)
 }
 
-fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
+model_t <- function(t,p,parms) {
+
+  betaMat <- matrix(parms$b, ncol = 2, byrow = F)
+
+  q1  = exp( c(1,parms$x_ik) %*% betaMat[1,] )  # Transition from state 1 to state 2.   c(1,floor(t),1)
+  q2  = exp( c(1,parms$x_ik) %*% betaMat[2,] )  # Transition from state 2 to state 3.   c(1,floor(t),1)
+  q3  = exp( c(1,parms$x_ik) %*% betaMat[3,] )  # Transition from state 1 to death.     c(1,floor(t),1)
+  q4  = exp( c(1,parms$x_ik) %*% betaMat[4,] )  # Transition from state 2 to death.     c(1,floor(t),1)
+  q5  = exp( c(1,parms$x_ik) %*% betaMat[5,] )  # Transition from state 3 to death.     c(1,floor(t),1)
+
+  dP = rep(1,9) # this is the vector with all diffEqs
+
+  dP[1] = p[1]*(-q1-q2)
+  dP[2] = p[1]*q1 + p[2]*(-q3-q4)
+  dP[3] = p[2]*q3 - p[3]*q5
+  dP[4] = p[1]*q2 + p[2]*q4 + p[3]*q5
+  dP[5] = p[5]*(-q3-q4)
+  dP[6] = p[5]*q3 - p[6]*q5
+  dP[7] = p[5]*q4 + p[6]*q5
+  dP[8] = -p[8]*q5
+  dP[9] = p[8]*q5
+
+  return(list(dP))
+
+}
+
+fn_log_post <- function(pars, prior_par, par_index, x, y, t, id, disc) {
 
   init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]), 0)
   init = init_logit / sum(init_logit)
@@ -67,37 +83,48 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
-  log_total_val = foreach(i=unique(id), .combine='+', .export = "Q", .packages = "expm") %dopar% {
+  log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = c("deSolve", "expm")) %dopar% {
 
-    y_i = y[id == i]
-    x_i = x[id == i,,drop = F]
-    t_i = t[id == i]
+	val = 1
+
+	y_i = y[id == i]
+  	x_i = x[id == i,,drop = F]
+  	t_i = t[id == i]
     Q_i = Q(x_i[1,], beta) # x_i is a 2 dimensional vector in time inhomogeneous
 
-    f_i = init %*% diag(resp_fnc[, y_i[1]])
+ 	f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
 
     for(k in 2:length(t_i)) {
 
-      P = expm((t_i[k] - t_i[k-1]) * Q_i)
-
-  	  if(y_i[k] < 4) {
-          val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-        } else {
-          val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
-        }
-
-      norm_val = sqrt(sum(val^2))
-  	  f_i = val / norm_val
-  	  log_norm = log_norm + log(norm_val)
+        if(disc) { # matrix exponential
+            P = expm((t_i[k] - t_i[k-1]) * Q_i)
+        } else { # deSolve package used
+            out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t, parms = list(b=beta, x_ik = x_i[k,]))
+            # WARNING IF-ELSE STATEMENT
+            P <- matrix(c(out[2,"p1"], out[2,"p2"], out[2,"p3"], out[2,"p4"],
+                          0, out[2,"p5"], out[2,"p6"], out[2,"p7"],
+                          0,  0, out[2,"p8"], out[2,"p9"],
+                          0,  0,  0,  1), nrow = 4, byrow = T)
     }
 
-    return(log(sum(f_i)) + log_norm)
+      if(y_i[k] < 4) {
+        val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
+      } else {
+        val = f_i %*% P %*% Q(x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
+      }
+
+      norm_val = sqrt(sum(val^2))
+      f_i = val / norm_val
+	  log_norm = log_norm + log(norm_val)
+    }
+
+	return(log(sum(f_i)) + log_norm)
   }
 
-    mean = prior_par$prior_mean
-    sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars, mean=mean, sigma=sd, log=T)
+  mean = prior_par$prior_mean
+  sd = diag(prior_par$prior_sd)
+  log_prior_dens = dmvnorm( x=pars, mean=mean, sigma=sd, log=T)
 
   return(log_total_val + log_prior_dens)
 
@@ -107,7 +134,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_cores){
+                         steps, burnin, n_cores, disc){
 
   cl <- makeCluster(n_cores, outfile="")
   registerDoParallel(cl)
@@ -125,7 +152,8 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
   accept = rep( 0, n_group)
 
   # Evaluate the log_post of the initial pars
-  log_post_prev = fn_log_post( pars, prior_par, par_index, x, y, t, id)
+  log_post_prev = fn_log_post( pars, prior_par, par_index, x, y, t, id, disc)
+
   if(!is.finite(log_post_prev)){
     print("Infinite log-posterior; choose better initial parameters")
     break
@@ -142,7 +170,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
       proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
 
       # Compute the log density for the proposal
-      log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
+      log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id, disc)
       # print("Likelihood Evaluation:")
       # print(log_post)
 
@@ -153,7 +181,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
           proposal = pars
           proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
                                      sigma=pcov[[j]]*pscale[j])
-          log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
+          log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id, disc)
         }
       }
 
