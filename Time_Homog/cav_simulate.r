@@ -30,13 +30,13 @@ dt <- 1/365
 
 
 # The years and iyears columns were both centered at round(mean(years),0) = 4 in the cav data set.  These are the true parameter values for the uncentered data ( intercept - coef*mean ).
-trueValues <- c(c(matrix(c(-2.54, 0, -0.56,
-                           -2.94, 0,  0.15,
-                           -1.10, 0, -0.03,
-                           -3.92, 0,  0.21,
-                           -2.12, 0,  1.17), ncol=3, byrow=T)),
-                c(  -4.59512, -1.15268, -2.751535, -2.090741),
-                c( -3.178054, -4.59512))
+trueValues <- c(c(matrix(c(-2.26568339, 0, -0.49991746,
+                           -1.22022878, 0, -0.82779213,
+                           -1.56180104, 0,  0.73838829,
+                           -2.20978996, 0, -1.83682627,
+                           -2.41222255, 0,  1.63135439), ncol=3, byrow=T)),
+                  c(  -5.73343061, -0.78623894, -2.52747176, -2.12144526),
+                  c( -6.52842355, -6.15970066))
 
 par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21)
 
@@ -97,14 +97,14 @@ propDeaths <- propDeaths / N_cav
 
 
 
-Q <- function(iyears,sex,betaMat){
+Q <- function(time,sex,betaMat){
 
-    # NOTE: betaMat has a 0 in the 2nd column so the iyears is irrelevant here
-	q1  = exp( c(1,iyears,sex) %*% betaMat[1,] )  # Transition from state 1 to state 2.
-	q2  = exp( c(1,iyears,sex) %*% betaMat[2,] )  # Transition from state 2 to state 3.
-	q3  = exp( c(1,iyears,sex) %*% betaMat[3,] )  # Transition from state 1 to death.
-	q4  = exp( c(1,iyears,sex) %*% betaMat[4,] )  # Transition from state 2 to death.
-	q5  = exp( c(1,iyears,sex) %*% betaMat[5,] )  # Transition from state 3 to death.
+    # NOTE: betaMat has a 0 in the 2nd column so the time is irrelevant here
+	q1  = exp( c(1,time,sex) %*% betaMat[1,] )  # Transition from state 1 to state 2.
+	q2  = exp( c(1,time,sex) %*% betaMat[2,] )  # Transition from state 2 to state 3.
+	q3  = exp( c(1,time,sex) %*% betaMat[3,] )  # Transition from state 1 to death.
+	q4  = exp( c(1,time,sex) %*% betaMat[4,] )  # Transition from state 2 to death.
+	q5  = exp( c(1,time,sex) %*% betaMat[5,] )  # Transition from state 3 to death.
 
 	qmat = matrix(c( 0,q1, 0,q2,
         		     0, 0,q3,q4,
