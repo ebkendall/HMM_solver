@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -o Model_out/msm/a_out/trial%a.out
-#SBATCH --array=1-50
+#SBATCH --array=1-100
 #SBATCH --nodes=1
 #SBATCH --ntasks=5
 #SBATCH --account=jantonelli

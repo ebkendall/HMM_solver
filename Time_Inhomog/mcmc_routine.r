@@ -32,8 +32,6 @@ package.install("expm")
 # library("msm")
 # library("deSolve")
 # library("expm")
-# library("foreach")
-# library("doParallel")
 
 Q <- function(t,x_ik,beta){
 
@@ -79,7 +77,7 @@ model_t <- function(t,p,parms) {
 
 }
 
-fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
+fn_log_post <- function(pars, prior_par, par_index, x, y, t, id, disc) {
 
   init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]), 0)
   init = init_logit / sum(init_logit)
@@ -93,33 +91,41 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
   beta <- pars[par_index$beta]
   p_ic <- c(p1=1,p2=0,p3=0,p4=0,p5=1,p6=0,p7=0,p8=1,p9=0)
 
-  log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = "deSolve") %dopar% {
+  log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = c("deSolve", "expm")) %dopar% {
 
-	val = 1
-    disc = F
+	val = 1; disc_t_i = NULL
+	y_i = y[id == i]                # the observed state
+    x_i = x[id == i,"sex",drop = F] # only the sex covariate
+    t_i = t[id == i]                # continuous time
 
-	y_i = y[id == i]
-    x_i = x[id == i,"sex",drop = F]
-    if(disc==T) disc_t_i = x[id == i,"disc_time",drop = F]
-  	t_i = t[id == i]
+    # If time is discretized for matrix exponential (disc = TRUE)
+    if(disc) { disc_t_i = x[id == i,"disc_time",drop = F] }
 
  	f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0
 
     for(k in 2:length(t_i)) {
 
+        if(disc) {
+            P = expm((t_i[k] - t_i[k-1]) * Q(disc_t_i[k-1], x_i[k-1,], beta))
+        } else {
+            out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t,
+                                parms = list(b=beta, x_ik = x_i[k,]))
 
-      out <- deSolve::ode(p_ic, times = t_i[(k-1):k], func = model_t, parms = list(b=beta, x_ik = x_i[k,]))
-      # WARNING IF-ELSE STATEMENT
-      P <- matrix(c(out[2,"p1"], out[2,"p2"], out[2,"p3"], out[2,"p4"],
-                    0, out[2,"p5"], out[2,"p6"], out[2,"p7"],
-                    0,  0, out[2,"p8"], out[2,"p9"],
-                    0,  0,  0,  1), nrow = 4, byrow = T)
+            P <- matrix(c(out[2,"p1"], out[2,"p2"], out[2,"p3"], out[2,"p4"],
+                          0, out[2,"p5"], out[2,"p6"], out[2,"p7"],
+                          0,  0, out[2,"p8"], out[2,"p9"],
+                          0,  0,  0,  1), nrow = 4, byrow = T)
+        }
 
-      if(y_i[k] < 4) {
-        val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
-      } else {
-          if(disc==T){
+      if(y_i[k] != 4) {
+          if(y_i[k] != 99) { # observation
+              val = f_i %*% P %*% diag(resp_fnc[, y_i[k]])
+          } else { # censor row (only happens when disc == TRUE)
+              val = f_i %*% P %*% diag(rowSums(resp_fnc[, 1:3]))
+          }
+      } else { # death is observed
+          if(disc){
               val = f_i %*% P %*% Q(disc_t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
           } else{
               val = f_i %*% P %*% Q(t_i[k], x_i[k,], beta) %*% diag(resp_fnc[, y_i[k]])
@@ -147,7 +153,7 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id) {
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_cores){
+                         steps, burnin, n_cores, disc){
 
   cl <- makeCluster(n_cores, outfile="")
   registerDoParallel(cl)
@@ -165,7 +171,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
   accept = rep( 0, n_group)
 
   # Evaluate the log_post of the initial pars
-  log_post_prev = fn_log_post( pars, prior_par, par_index, x, y, t, id)
+  log_post_prev = fn_log_post( pars, prior_par, par_index, x, y, t, id, disc)
 
   if(!is.finite(log_post_prev)){
     print("Infinite log-posterior; choose better initial parameters")
@@ -183,7 +189,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
       proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
 
       # Compute the log density for the proposal
-      log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
+      log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id, disc)
       # print("Likelihood Evaluation:")
       # print(log_post)
 
@@ -194,7 +200,7 @@ mcmc_routine = function( y, x, t, id, init_par, prior_par, par_index,
           proposal = pars
           proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
                                      sigma=pcov[[j]]*pscale[j])
-          log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id)
+          log_post = fn_log_post(proposal, prior_par, par_index, x, y, t, id, disc)
         }
       }
 
