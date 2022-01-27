@@ -76,8 +76,9 @@ cred_set = vector(mode = 'list', length = length(true_par))
 for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
                                                         'upper' = c(-1))
 ind = 0
+index_seeds = 1:100
 
-for (i in 1:100) {
+for (i in index_seeds) {
     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
     if(file.exists(file_name)){
 	    load(file_name) # changed toString to 3
@@ -111,7 +112,7 @@ for(i in 1:length(true_par)) {
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = 1:100
+
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
