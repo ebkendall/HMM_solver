@@ -29,25 +29,32 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_index = list(beta=1:10, misclass=11:14, pi_logit=15:16)
 # par_index = list( beta=1:15, pi_logit=16:17)
 
-true_par = c(c(matrix(c(-2.54, -0.56,
-                        -2.94,  0.15,
-                        -1.10, -0.03,
-                        -3.92,  0.21,
-                        -2.12,  1.17), ncol=2, byrow=T)),
-            c(  -4.59512, -1.15268, -2.751535, -2.090741),
-            c( -3.178054, -4.59512))
+true_par = c(c(matrix(c(-2.26568339, -0.49991746,
+                        -1.22022878, -0.82779213,
+                        -1.56180104,  0.73838829,
+                        -2.20978996, -1.83682627,
+                        -2.41222255,  1.63135439), ncol=2, byrow=T)),
+                  c(  -5.73343061, -0.78623894, -2.52747176, -2.12144526),
+                  c( -6.52842355, -6.15970066))
 
+true_par_inv = true_par
+
+true_par_inv[par_index$pi_logit] =
+  exp(true_par_inv[par_index$pi_logit])/(1 + exp(true_par_inv[par_index$pi_logit]))
+true_par_inv[par_index$misclass[1]] =
+  exp(true_par_inv[par_index$misclass[1]])/(1 + exp(true_par_inv[par_index$misclass[1]]))
+true_par_inv[par_index$misclass[2:3]] =
+  exp(true_par_inv[par_index$misclass[2:3]])/sum(c(1, exp(true_par_inv[par_index$misclass[2:3]])))
+true_par_inv[par_index$misclass[4]] =
+  exp(true_par_inv[par_index$misclass[4]])/(1 + exp(true_par_inv[par_index$misclass[4]]))
+
+true_par_inv = round(true_par_inv, digits = 6)
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'b.l. S1 (well)   --->   S4 (dead)',
             'b.l. S2 (mild)   --->   S3 (severe)',
             'b.l. S2 (mild)   --->   S4 (dead)',
             'b.l. S3 (severe)   --->   S4 (dead)',
-            # 'iyears State 1 (well)   --->   State 2 (mild)',
-            # 'iyears State 1 (well)   --->   State 4 (dead)',
-            # 'iyears State 2 (mild)   --->   State 3 (severe)',
-            # 'iyears State 2 (mild)   --->   State 4 (dead)',
-            # 'iyears State 3 (severe)   --->   State 4 (dead)',
             'sex S1 (well)   --->   S2 (mild)',
             'sex S1 (well)   --->   S4 (dead)',
             'sex S2 (mild)   --->   S3 (severe)',
@@ -104,7 +111,7 @@ for(i in 1:length(true_par)) {
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = 1:50
+index_seeds = 1:100
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
@@ -116,6 +123,18 @@ for(seed in index_seeds){
         print(mcmc_out$accept)
 
       	chain_list[[ind]] = mcmc_out$chain[index_post,]
+
+        # Putting the violin plots in terms of the probabilities
+        mcmc_out$chain[,par_index$pi_logit] =
+            exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
+        mcmc_out$chain[,par_index$misclass[1]] =
+            exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
+        mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
+                                                   exp(mcmc_out$chain[,par_index$misclass[2]]) +
+                                                   exp(mcmc_out$chain[,par_index$misclass[3]]))
+        mcmc_out$chain[,par_index$misclass[4]] =
+            exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
+
     	post_means[ind,] <- colMeans(mcmc_out$chain[index_post,])
   }
 }
@@ -152,9 +171,9 @@ for(r in 1:length(labels)){
     geom_violin(trim=FALSE) +
     geom_boxplot(width=0.1) +
     ggtitle(labels[r]) +
-    ylab(paste0("Parameter Value: ", true_par[r])) +
+    ylab(paste0("Parameter Value: ", true_par_inv[r])) +
     xlab(paste0("Coverage is: ", cov_df[r])) +
-    geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
+    geom_hline(yintercept=true_par_inv[r], linetype="dashed", color = "red") +
     theme(text = element_text(size = 7))
   #boxplot(post_means[,r], main=labels[r], ylab=NA, xlab = true_par[r])
   #abline(h=true_par[r], col="red")
