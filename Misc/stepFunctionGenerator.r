@@ -57,15 +57,9 @@ stepFunction <- function(dis1, dis2, x_low, x_up) {
 # - NEW STEP FUNCTION THAT IS MINIMIZING THE SQUARED ERROR LOSS -
 # ---------------------------------------------------------------
 
-new_step_fnc <- function(x_lim, dis1, dis2)
-
 t_i = seq(-1000,999.99, by = 0.01)
 
 y_i = floor(t_i) 
-
-plot(x = NULL, y = NULL, ylim = c(-1,5), xlim = c(-1,5))
-lines(t_i, y_i)
-abline(h = 0, col = "green"); abline(v=0, col = "green")
 
 X = cbind(1, t_i)
 
@@ -73,8 +67,6 @@ b = solve(t(X) %*% X) %*% t(X) %*% y_i
 
 Xhat = cbind(1, seq(-1000, 1000, by=0.01))
 yhat = Xhat %*% b
-
-#lines(Xhat[,2],yhat)
 
 
 dis1seq = seq(-1000, 1000, by = 0.5)
@@ -92,10 +84,21 @@ b_half = solve(t(X_half) %*% X_half) %*% t(X_half) %*% y_i
 yhat_half = X_half %*% b_half
 
 #plot(stepfun(X_half[,2], c(min(yhat_half), yhat_half)), col = "red", do.points = F)
-lines(t_i,yhat_half, col = "red")
 
+# ------------ PLOTTING ------------
+plot(x = NULL, y = NULL, ylim = c(-1,5), xlim = c(-1,5))
+lines(t_i, y_i)
+abline(h = 0, lty = 2); abline(v=0, lty = 2)
+
+lines(Xhat[,2],yhat, col= "blue")
+
+lines(X_half[,2],yhat_half, col = "red")
 
 points(t_i_half, y_i, col = "red")
+
+legend("topleft", inset = 0.05, legend=c("Line 1", "Line 2"),
+       col=c("red", "blue"), lty=1:2, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
 
 
 # Testing the heights
