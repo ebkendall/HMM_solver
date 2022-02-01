@@ -1,100 +1,44 @@
-# Let dis1 be the true discretization, and dis2 is the estimated on
-stepFunction <- function(dis1, dis2, x_low, x_up) {
-  
-  set.seed(10)
-  
-  #creating xlim based on the larger discritization
-  maxDis= max(c(dis1, dis2))
-  xlimit = 1
-  
-  dis1seq = seq(0, xlimit, by = dis1)
-  dis2seq = seq(0, xlimit, by = dis2)
-  
-  x = y1 = y2 = runif(15, min = 0, max = xlimit)
-  
-  for(i in 1:length(y1)) {
-    indDis = max(which(dis1seq <= x[i])) #selects which month to go to
-    y1[i] = dis1seq[indDis]
-  }
-  
-  for(i in 1:length(y2)) {
-    indDis = max(which(dis2seq <= x[i])) #selects which month to go to
-    y2[i] = dis2seq[indDis]
-  }
-  
-  mod1 = lm(y1 ~ x)
-  mod2 = lm(y2 ~ x)
-  
-  xlimit = 1 #ceiling(10 * maxDis)
-  
-  x1_o = y1_o = dis1seq
-  x2_o = y2_o = dis2seq
-  
-  ylimit = c(min(coefficients(mod1)[1], coefficients(mod2)[1]), 1)
-  
-  
-  plot(x1_o, y1_o, xlim = c(0,xlimit), ylim = ylimit, xaxt='n', yaxt='n', bty="n",
-       xlab = "Time", ylab = "Discretization of Time", col = "white")
-  points(x2_o, y2_o, col = "white")
-  abline(h=0)
-  abline(v=0)
-  
-  plot(stepfun(x1_o, c(0,y1_o)), col = "red", add = T, do.points = F)
-  plot(stepfun(x2_o, c(0,y2_o)), col = "blue", add = T, do.points = F)
-  
-  abline(mod1, col = "red")
-  abline(mod2, col = "blue")
-  
-  points(x, y1, col = "red")
-  points(x, y2, col = "blue")
-  
-  print(paste0("Intercept of red curve is: ", coefficients(mod1)[1], " with slope ", coefficients(mod1)[2]))
-  print(paste0("Intercept of blue curve is: ", coefficients(mod2)[1], " with slope ", coefficients(mod2)[2]))
-  
-}
-
-# ---------------------------------------------------------------
-# - NEW STEP FUNCTION THAT IS MINIMIZING THE SQUARED ERROR LOSS -
-# ---------------------------------------------------------------
-
 t_i = seq(-1000,999.99, by = 0.01)
 
-y_i = floor(t_i) 
+# y_i = floor(t_i) 
+y_i = t_i
 
-X = cbind(1, t_i)
+X_hat = cbind(1, t_i - (t_i %% 1))
+b = solve(t(X_hat) %*% X_hat) %*% t(X_hat) %*% y_i
+y_hat = X_hat %*% b
 
-b = solve(t(X) %*% X) %*% t(X) %*% y_i
-
-Xhat = cbind(1, seq(-1000, 1000, by=0.01))
-yhat = Xhat %*% b
-
-
-dis1seq = seq(-1000, 1000, by = 0.5)
-t_i_half = t_i
-for(i in 1:length(t_i)) {
-  indDis = max(which(dis1seq <= t_i[i])) #selects which month to go to
-  t_i_half[i] = dis1seq[indDis]
-}
-
-X_half = cbind(1, t_i_half)
-
-b_half = solve(t(X_half) %*% X_half) %*% t(X_half) %*% y_i
+# X = cbind(1, t_i)
+# 
+# b = solve(t(X) %*% X) %*% t(X) %*% y_i
+# 
+# Xhat = cbind(1, seq(-1000, 1000, by=0.01))
+# yhat = Xhat %*% b
 
 
-yhat_half = X_half %*% b_half
-
-#plot(stepfun(X_half[,2], c(min(yhat_half), yhat_half)), col = "red", do.points = F)
+# dis1seq = seq(-1000, 1000, by = 0.5)
+# t_i_half = t_i
+# for(i in 1:length(t_i)) {
+#   indDis = max(which(dis1seq <= t_i[i])) #selects which month to go to
+#   t_i_half[i] = dis1seq[indDis]
+# }
+# 
+# X_half = cbind(1, t_i_half)
+# 
+# b_half = solve(t(X_half) %*% X_half) %*% t(X_half) %*% y_i
+# 
+# 
+# yhat_half = X_half %*% b_half
 
 # ------------ PLOTTING ------------
 plot(x = NULL, y = NULL, ylim = c(-1,5), xlim = c(-1,5))
 lines(t_i, y_i)
 abline(h = 0, lty = 2); abline(v=0, lty = 2)
 
-lines(Xhat[,2],yhat, col= "blue")
+temp = stepfun(t_i[-1], y_hat)
+plot(temp, verticals = F, col = "red", add = T)
+# lines(X_half[,2],yhat_half, col = "red")
 
-lines(X_half[,2],yhat_half, col = "red")
-
-points(t_i_half, y_i, col = "red")
+# points(t_i_half, y_i, col = "red")
 
 legend("topleft", inset = 0.05, legend=c("Line 1", "Line 2"),
        col=c("red", "blue"), lty=1:2, cex=0.8,
@@ -108,3 +52,70 @@ temp = temp - seq1; temp
 sum((temp^2))
 
 # Note: it is minimizing over the entire region.
+
+
+# ---------------------------------------------------------------
+# - NEW STEP FUNCTION THAT IS MINIMIZING THE SQUARED ERROR LOSS -
+# ---------------------------------------------------------------
+final_plot_fnc <- function(d1, d2, d3) {
+
+  t_i = seq(-1000,999.99, by = 0.01)
+  y_i = t_i
+  
+  X_hat_1 = cbind(1, t_i - (t_i %% d1))
+  b1 = solve(t(X_hat_1) %*% X_hat_1) %*% t(X_hat_1) %*% y_i
+  y_hat_1 = X_hat_1 %*% b1
+  
+  X_hat_2 = cbind(1, t_i - (t_i %% d2))
+  b2 = solve(t(X_hat_2) %*% X_hat_2) %*% t(X_hat_2) %*% y_i
+  y_hat_2 = X_hat_2 %*% b2
+  
+  X_hat_3 = cbind(1, t_i - (t_i %% d3))
+  b3 = solve(t(X_hat_3) %*% X_hat_3) %*% t(X_hat_3) %*% y_i
+  y_hat_3 = X_hat_3 %*% b3
+  
+  # ------------ Expectations ------------
+  W = cbind(1, t_i)
+  beta = matrix(c(0,1), nrow = 2)
+  e1 = solve(t(X_hat_1) %*% X_hat_1) %*% t(X_hat_1) %*% W %*% beta
+  e2 = solve(t(X_hat_2) %*% X_hat_2) %*% t(X_hat_2) %*% W %*% beta
+  e3 = solve(t(X_hat_3) %*% X_hat_3) %*% t(X_hat_3) %*% W %*% beta
+  
+  e1 = round(e1, digits = 5)
+  e2 = round(e2, digits = 5)
+  e3 = round(e3, digits = 5)
+  
+  # ------------ PLOTTING ------------
+  plot(x = NULL, y = NULL, ylim = c(-1,5), xlim = c(-1,5),
+       xlab = "t_i", ylab = "Y_i", 
+       main = "Illustration of Theorem 1")
+  lines(t_i, y_i)
+  abline(h = 0, lty = 2); abline(v=0, lty = 2)
+  
+  temp1 = stepfun(t_i[-1], y_hat_1)
+  temp2 = stepfun(t_i[-1], y_hat_2)
+  temp3 = stepfun(t_i[-1], y_hat_3)
+  
+  plot(temp1, verticals = F, col = "red", add = T)
+  plot(temp2, verticals = F, col = "blue", add = T)
+  plot(temp3, verticals = F, col = "purple", add = T)
+  
+  legend("topleft", inset = 0.05, 
+         legend=c(paste0(d1, " unit(s)"), 
+                  paste0(d2, " unit(s)"),
+                  paste0(d3, " unit(s)")),
+         col=c("red", "blue", "purple"), lty=1, cex=0.8,
+         title="Discretization Type", text.font=4, bg='lightblue')
+  
+  legend("bottomright", inset = 0.05,
+         legend=c(paste0("b0: ", formatC(e1[1,1],format = "f", digits=5), 
+                         ", b1: ", formatC(e1[2,1],format = "f", digits=5)), 
+                  paste0("b0: ", formatC(e2[1,1],format = "f", digits=5),
+                         ", b1: ", formatC(e2[2,1],format = "f", digits=5)),
+                  paste0("b0: ", formatC(e3[1,1],format = "f", digits=5),
+                         ", b1: ", formatC(e3[2,1],format = "f", digits=5))),
+         col=c("red", "blue", "purple"), lty=1, cex=0.8,
+         title="Expected Values", text.font=4, bg='lightblue')
+
+  
+}
