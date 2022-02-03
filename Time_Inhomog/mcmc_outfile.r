@@ -20,11 +20,13 @@ n_post = 5000
 # Step number at 3ich the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 10000
+steps = 20000
 # Matrix row indices for the posterior sample to use for GFF computation
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
+
+index_seeds = 1:100
 
 # true_par = c(c(matrix(c(-2.54,  0.11, -0.56,
 #                         -2.94, -0.24,  0.15,
@@ -34,13 +36,13 @@ par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
 #                   c(  -4.59512, -1.15268, -2.751535, -2.090741),
 #                   c( -3.178054, -4.59512))
 
-true_par = c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
-                        -1.17308794, -5.10636947, -0.96162312,
-                        -1.71474254, -0.04338819,  0.83882558,
-                        -2.08300714,  0.03824367, -2.75345311,
-                        -2.42208380,  0.11315485,  1.76897841), ncol=3, byrow=T)),
-                     c( -5.60251814, -0.84455697, -2.56906519, -2.12629033),
-                     c( -6.95125291, -7.07504453))
+true_par = c(c(matrix(c(-2.26568339, 3 *  0.08766060, -0.49991746,
+                  -1.22022878, 3 * -4.44888558, -0.82779213,
+                  -1.56180104, 3 * -0.08262607,  0.73838829,
+                  -2.20978996, 3 *  0.05404948, -1.83682627,
+                  -2.41222255, 3 *  0.10833734,  1.63135439), ncol=3, byrow=T)),
+          c(  -5.73343061, -0.78623894, -2.52747176, -2.12144526),
+          c( -6.52842355, -6.15970066))
 
 # Doing the inverse logit for true_par
 true_par[par_index$pi_logit] =
@@ -53,6 +55,7 @@ true_par[par_index$misclass[4]] =
     exp(true_par[par_index$misclass[4]])/(1 + exp(true_par[par_index$misclass[4]]))
 
 print(true_par)
+print(length(true_par))
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'b.l. S1 (well)   --->   S4 (dead)',
@@ -91,37 +94,43 @@ for(i in 1:length(cred_set)) {
     }
 
 }
+ind = vector(mode = "list", length = 2)
+ind[[1]] = ind[[2]] = 0
 
-for (i in 1:50) {
+for (i in index_seeds) {
     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
+    print(i)
     # If its deSolve, for_length[folder] = 1
     # If its expm, for_length[folder] = 3 b/c of the 3 discretizations
     for(w in 1:loopLength) {
+
         if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(i),'.rda')}
-	    load(file_name)
+        if(file.exists(file_name)) {
+            load(file_name)
+            ind[[w]] = ind[[w]] + 1
+            # Inverse logit to convert back to probabilities
+            mcmc_out$chain[,par_index$pi_logit] =
+                exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
+            mcmc_out$chain[,par_index$misclass[1]] =
+                exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
+            mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
+                                                       exp(mcmc_out$chain[,par_index$misclass[2]]) +
+                                                       exp(mcmc_out$chain[,par_index$misclass[3]]))
+            mcmc_out$chain[,par_index$misclass[4]] =
+                exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
 
-        # Inverse logit to convert back to probabilities
-        mcmc_out$chain[,par_index$pi_logit] =
-            exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
-        mcmc_out$chain[,par_index$misclass[1]] =
-            exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
-        mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
-                                                   exp(mcmc_out$chain[,par_index$misclass[2]]) +
-                                                   exp(mcmc_out$chain[,par_index$misclass[3]]))
-        mcmc_out$chain[,par_index$misclass[4]] =
-            exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
-
-        for(j in 1:length(true_par)) {
-            if(folder == 2) {
-                cred_set[[j]][[w]][i,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                            prob=.025), 4)
-                cred_set[[j]][[w]][i,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                            prob=.975), 4)
-            } else {
-                cred_set[[j]][i,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                            prob=.025), 4)
-                cred_set[[j]][i,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                            prob=.975), 4)
+            for(j in 1:length(true_par)) {
+                if(folder == 2) {
+                    cred_set[[j]][[w]][ind[[w]],1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                                prob=.025), 4)
+                    cred_set[[j]][[w]][ind[[w]],2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                                prob=.975), 4)
+                } else {
+                    cred_set[[j]][ind[[w]],1] =  round(quantile( mcmc_out$chain[index_post,j],
+                                                prob=.025), 4)
+                    cred_set[[j]][ind[[w]],2] =  round(quantile( mcmc_out$chain[index_post,j],
+                                                prob=.975), 4)
+                }
             }
         }
     }
@@ -160,38 +169,41 @@ if (folder == 1) {
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = 1:50
 post_means <- vector(mode = "list", length = length(sub_folder))
 chain_list <- vector(mode = "list", length = length(sub_folder))
 
 # If folder == 1, then we will only populate the first entry of the list
-for(i in 1:length(chain_list)) {chain_list[[i]] = vector(mode = "list", length = length(index_seeds))}
-for(i in 1:length(post_means)) {post_means[[i]] = matrix(nrow = length(index_seeds), ncol = length(labels))}
+for(i in 1:length(chain_list)) {chain_list[[i]] = vector(mode = "list", length = ind[[i]])}
+for(i in 1:length(post_means)) {post_means[[i]] = matrix(nrow = ind[[i]], ncol = length(labels))}
+
+ind[[1]] = ind[[2]] = 0
 
 for(seed in index_seeds){
     file_name = paste0(dir,'mcmc_out_',toString(seed),'.rda')
 
     for(w in 1:loopLength) {
+
         if (folder == 2) {file_name = paste0(dir,sub_folder[w],'mcmc_out_',toString(seed),'.rda')}
+        if (file.exists(file_name)) {
+            load(file_name)
+            ind[[w]] = ind[[w]] + 1
+            print(mcmc_out$accept)
 
-        load(file_name)
-
-        print(mcmc_out$accept)
-
-        # Inverse logit to convert back to probabilities
-        mcmc_out$chain[,par_index$pi_logit] =
-            exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
-        mcmc_out$chain[,par_index$misclass[1]] =
-            exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
-        mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
-                                                   exp(mcmc_out$chain[,par_index$misclass[2]]) +
-                                                   exp(mcmc_out$chain[,par_index$misclass[3]]))
-        mcmc_out$chain[,par_index$misclass[4]] =
-            exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
+            # Inverse logit to convert back to probabilities
+            mcmc_out$chain[,par_index$pi_logit] =
+                exp(mcmc_out$chain[,par_index$pi_logit])/(1 + exp(mcmc_out$chain[,par_index$pi_logit]))
+            mcmc_out$chain[,par_index$misclass[1]] =
+                exp(mcmc_out$chain[,par_index$misclass[1]])/(1 + exp(mcmc_out$chain[,par_index$misclass[1]]))
+            mcmc_out$chain[,par_index$misclass[2:3]] = exp(mcmc_out$chain[,par_index$misclass[2:3]])/(1 +
+                                                       exp(mcmc_out$chain[,par_index$misclass[2]]) +
+                                                       exp(mcmc_out$chain[,par_index$misclass[3]]))
+            mcmc_out$chain[,par_index$misclass[4]] =
+                exp(mcmc_out$chain[,par_index$misclass[4]])/(1 + exp(mcmc_out$chain[,par_index$misclass[4]]))
 
 
-      	chain_list[[w]][[seed]] = mcmc_out$chain[index_post,]
-        post_means[[w]][seed,] <- colMeans(mcmc_out$chain[index_post,])
+          	chain_list[[w]][[ind[[w]]]] = mcmc_out$chain[index_post,]
+            post_means[[w]][ind[[w]],] <- colMeans(mcmc_out$chain[index_post,])
+        }
     }
 }
 

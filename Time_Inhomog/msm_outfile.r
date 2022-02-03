@@ -4,7 +4,7 @@ for(p in requiredPackages){
   library(p,character.only = TRUE)
 }
 
-nFrames = 50
+nFrames = 100
 
 labels <- c('baseline S1 (well)   --->   S2 (mild)',
             'baseline S1 (well)   --->   S4 (dead)',
@@ -29,13 +29,13 @@ labels <- c('baseline S1 (well)   --->   S2 (mild)',
 
 par_index = list(beta=1:15, misclass=16:19, pi_logit=20:21)
 
-trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
-                         -1.17308794, -5.10636947, -0.96162312,
-                         -1.71474254, -0.04338819,  0.83882558,
-                         -2.08300714,  0.03824367, -2.75345311,
-                         -2.42208380,  0.11315485,  1.76897841), ncol=3, byrow=T)),
-                  c(  -5.60251814, -0.84455697, -2.56906519, -2.12629033),
-                  c( -6.95125291, -7.07504453))
+trueValues <- c(c(matrix(c(-2.26568339, 3 *  0.08766060, -0.49991746,
+                           -1.22022878, 3 * -4.44888558, -0.82779213,
+                           -1.56180104, 3 * -0.08262607,  0.73838829,
+                           -2.20978996, 3 *  0.05404948, -1.83682627,
+                           -2.41222255, 3 *  0.10833734,  1.63135439), ncol=3, byrow=T)),
+                  c(  -5.73343061, -0.78623894, -2.52747176, -2.12144526),
+                  c( -6.52842355, -6.15970066))
 
 # trueValues <-  c(c(matrix(c(-2.54,  0.11, -0.56,
 #                             -2.94, -0.24,  0.15,
@@ -69,8 +69,6 @@ row_ind1 = row_ind2 = row_ind3 = 1
 
 for (i in 1:nFrames) {
 
-  print(i)
-
   load(paste0("Model_out/msm/Month/Output_msm", i, ".rda"))
   if (length(Output_msm$QmatricesSE) != 0) { # means a non poisitive definite matrix
       month_data[row_ind1,] = c(Output_msm$opt$par)
@@ -97,6 +95,8 @@ for (i in 1:nFrames) {
       cred_set[[21]][[1]][row_ind1,1] = Output_msm$ci[37,1]; cred_set[[21]][[1]][row_ind1,2] = Output_msm$ci[37,2]
 
       row_ind1 = row_ind1 + 1
+  } else {
+      print(paste0("Month Issue: ", i))
   }
 
 
@@ -128,6 +128,8 @@ for (i in 1:nFrames) {
       cred_set[[21]][[2]][row_ind2,1] = Output_msm$ci[37,1]; cred_set[[21]][[2]][row_ind2,2] = Output_msm$ci[37,2]
 
       row_ind2 = row_ind2 + 1
+  } else {
+      print(paste0("Year Issue: ", i))
   }
  # -----------------------------------------------------------------------------
 
@@ -158,6 +160,8 @@ for (i in 1:nFrames) {
       cred_set[[21]][[3]][row_ind3,1] = Output_msm$ci[37,1]; cred_set[[21]][[3]][row_ind3,2] = Output_msm$ci[37,2]
 
       row_ind3 = row_ind3 + 1
+  } else {
+      print(paste0("YearTwo Issue: ", i))
   }
 }
 
