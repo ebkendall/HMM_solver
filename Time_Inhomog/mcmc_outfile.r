@@ -9,8 +9,8 @@ args = commandArgs(TRUE)
 folder = as.numeric(args[1])
 
 model_name = c('deSolve', 'expm')
-sub_folder = c('Year/', 'YearTwo/') #'Month/',
-for_length = c(1, 2)
+sub_folder = c('Month/', 'Year/', 'YearTwo/')
+for_length = c(1, 3)
 loopLength = for_length[folder]
 
 dir = paste0('Model_out/', model_name[folder], '/')
@@ -94,8 +94,8 @@ for(i in 1:length(cred_set)) {
     }
 
 }
-ind = vector(mode = "list", length = 2)
-ind[[1]] = ind[[2]] = 0
+ind = vector(mode = "list", length = 3)
+ind[[1]] = ind[[2]] = ind[[3]] = 0
 
 for (i in index_seeds) {
     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
@@ -136,7 +136,7 @@ for (i in index_seeds) {
     }
 }
 
-save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
+#save(cred_set, file = paste0('Plots/cred_set_', model_name[folder], '.rda'))
 
 # -----------------------------------------------------------------------------
 # Calculating Coverage --------------------------------------------------------
@@ -160,7 +160,7 @@ if (folder == 1) {
             bot = nrow(cred_set[[i]][[j]])
             covrg = top/bot
             cov_df[i,j] = covrg
-            print(paste0("Coverage for parameter ", val, " is: ", covrg))
+            print(paste0("Coverage for parameter ", val, " is: ", covrg, "  ", bot))
         }
     }
 }
@@ -176,7 +176,7 @@ chain_list <- vector(mode = "list", length = length(sub_folder))
 for(i in 1:length(chain_list)) {chain_list[[i]] = vector(mode = "list", length = ind[[i]])}
 for(i in 1:length(post_means)) {post_means[[i]] = matrix(nrow = ind[[i]], ncol = length(labels))}
 
-ind[[1]] = ind[[2]] = 0
+ind[[1]] = ind[[2]] = ind[[3]] = 0
 
 for(seed in index_seeds){
     file_name = paste0(dir,'mcmc_out_',toString(seed),'.rda')
@@ -243,14 +243,17 @@ for(r in 1:length(labels)) {
     # Adding the boxplots
     yVar = disc_type = x_label = NULL
     if(folder == 2) {
-        yVar = c(post_means[[1]][,r], post_means[[2]][,r]) #, post_means[[3]][,r])
-        disc_type = c(rep("Year", nrow(post_means[[1]])),
-                      rep("YearTwo", nrow(post_means[[2]]))) # rep("Month", nrow(post_means[[1]])),
-        x_label = paste0("Year: ", cov_df[r,1], ", YearTwo: ", cov_df[r,2]) #, ", Month: ", cov_df[i,1])
+        yVar = c(post_means[[1]][,r], post_means[[2]][,r], post_means[[3]][,r])
+        disc_type = c(rep("Month", nrow(post_means[[1]])),
+                      rep("Year", nrow(post_means[[2]])),
+                      rep("YearTwo", nrow(post_means[[3]])))
+        x_label = paste0("Month: ", round(cov_df[r,1], digits=3),
+                        ", Year: ", round(cov_df[r,2], digits=3),
+                        ", YearTwo: ", round(cov_df[r,3], digits=3))
     } else {
         yVar = post_means[[1]][,r]
         disc_type = rep("Continuous", nrow(post_means[[1]]))
-        x_label = paste0("Coverage is: ", cov_df[r])
+        x_label = paste0("Coverage is: ", round(cov_df[r], digits=3))
     }
 
     plot_df = data.frame(yVar = yVar, disc_type = disc_type)
@@ -271,3 +274,6 @@ grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
 grid.arrange(VP[[19]], VP[[20]], VP[[21]], ncol=3, nrow =3)
 
 dev.off()
+
+save(post_means, file = paste0("Plots/post_means_", model_name[folder], ".rda"))
+save(cov_df, file = paste0("Plots/cov_df_", model_name[folder], ".rda"))

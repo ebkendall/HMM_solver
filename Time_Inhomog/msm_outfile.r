@@ -245,7 +245,9 @@ for(i in 1:length(trueValues)) {
 	y2 = data.frame(y = year_2_data[,i], type = rep("Year_2", nrow(year_2_data)))
 
     plot_df = rbind(m,y,y2)
-    xlabel = paste0("Month: ", cov_df[i,1], ", Year: ", cov_df[i,2], ", YearTwo: ", cov_df[i,3])
+    xlabel = paste0("Month: ", round(cov_df[i,1], digits = 3),
+                   ", Year: ", round(cov_df[i,2], digits = 3),
+                   ", YearTwo: ", round(cov_df[i,3], digits = 3))
 
     VP[[i]] = ggplot(plot_df, aes(x = type, y = y)) +
       geom_violin(trim=FALSE) +
@@ -265,3 +267,9 @@ grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
              VP[[15]], VP[[16]], VP[[17]], VP[[18]], ncol=3, nrow =3)
 grid.arrange(VP[[19]], VP[[20]], VP[[21]], ncol=3, nrow =3)
 dev.off()
+
+post_means = vector(mode = 'list', length = 3)
+post_means[[1]] = month_data; post_means[[2]] = year_data; post_means[[3]] = year_2_data
+
+save(post_means, file = paste0("Plots/post_means_msm.rda"))
+save(cov_df, file = paste0("Plots/cov_df_msm.rda"))
