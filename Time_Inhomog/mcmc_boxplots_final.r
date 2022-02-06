@@ -72,7 +72,6 @@ post_means_final[[5]] = post_means[[1]]; post_means_final[[6]] = post_means[[2]]
 post_means_final[[7]] = post_means[[3]]
 
 VP <- vector(mode="list", length = length(labels))
-pdf("Plots/violinPlots_final_bl.pdf")
 for(r in 1:length(labels)) {
 
     yVar = disc_type = x_label = NULL
@@ -81,17 +80,17 @@ for(r in 1:length(labels)) {
              post_means_final[[4]][,r], post_means_final[[5]][,r], post_means_final[[6]][,r],
              post_means_final[[7]][,r])
 
-    disc_type = c(rep(paste0("deSolve\n", cov_final[r,1]), nrow(post_means_final[[1]])),
-                  rep(paste0("expm_Month\n",cov_final[r,2]), nrow(post_means_final[[2]])),
-                  rep(paste0("expm_Year\n", cov_final[r,3]), nrow(post_means_final[[3]])),
-                  rep(paste0("expm_Year_2\n",cov_final[r,4]), nrow(post_means_final[[4]])),
-                  rep(paste0("msm_Month\n",cov_final[r,5]), nrow(post_means_final[[5]])),
-                  rep(paste0("msm_Year\n",cov_final[r,6]), nrow(post_means_final[[6]])),
-                  rep(paste0("msm_Year_2\n",cov_final[r,7]), nrow(post_means_final[[7]])))
+    disc_type = c(rep(paste0("a) Continuous\n", cov_final[r,1]), nrow(post_means_final[[1]])),
+                  rep(paste0("b) Bi-month\n",cov_final[r,2]), nrow(post_means_final[[2]])),
+                  rep(paste0("c) Year\n", cov_final[r,3]), nrow(post_means_final[[3]])),
+                  rep(paste0("d) Bi-year\n",cov_final[r,4]), nrow(post_means_final[[4]])),
+                  rep(paste0("e) Bi-month\n",cov_final[r,5]), nrow(post_means_final[[5]])),
+                  rep(paste0("f) Year\n",cov_final[r,6]), nrow(post_means_final[[6]])),
+                  rep(paste0("g) Bi-year\n",cov_final[r,7]), nrow(post_means_final[[7]])))
 
-    Method = c(rep("deSolve", nrow(post_means_final[[1]])),
-                  rep("expm", nrow(post_means_final[[2]]) + nrow(post_means_final[[3]]) + nrow(post_means_final[[4]])),
-                  rep("msm", nrow(post_means_final[[5]]) + nrow(post_means_final[[6]]) + nrow(post_means_final[[7]])))
+    Method = c(rep("ODE w/ Post. Means", nrow(post_means_final[[1]])),
+                  rep("Expm w/ Post. Means", nrow(post_means_final[[2]]) + nrow(post_means_final[[3]]) + nrow(post_means_final[[4]])),
+                  rep("Expm w/ MLE", nrow(post_means_final[[5]]) + nrow(post_means_final[[6]]) + nrow(post_means_final[[7]])))
 
     plot_df = data.frame(yVar = yVar, disc_type = disc_type, Method = Method)
     VP[[r]] = ggplot(plot_df, aes(x=disc_type, y = yVar, fill = Method)) +
@@ -100,14 +99,34 @@ for(r in 1:length(labels)) {
       ggtitle(labels[r]) +
       ylab("") + #paste0("Parameter Value: ", round(true_par[r], 3))
       xlab("") +
-      geom_hline(yintercept=true_par[r], linetype="dashed", color = "red", size=0.75) +
-      theme(text = element_text(size = 10))
+      geom_hline(yintercept=true_par[r], linetype="dashed", color = "red", size=1.5) +
+      theme(text = element_text(size = 35))
 }
 
-grid.arrange(VP[[1]] ncol = 1, nrow = 1) #, VP[[2]], VP[[3]], VP[[4]], VP[[5]],
+png("Plots/violinPlots_final_b1.png", width = 1600, height = 700)
+print(VP[[1]]);
+dev.off()
+png("Plots/violinPlots_final_b2.png", width = 1600, height = 700)
+print(VP[[2]]);
+dev.off()
+png("Plots/violinPlots_final_b3.png", width = 1600, height = 700)
+print(VP[[3]]);
+dev.off()
+png("Plots/violinPlots_final_b4.png", width = 1600, height = 700)
+print(VP[[4]]);
+dev.off()
+png("Plots/violinPlots_final_b5.png", width = 1600, height = 700)
+print(VP[[5]]);
+dev.off()
+
+
+# print(VP[[2]]); print(VP[[3]]); print(VP[[4]]); print(VP[[5]])
+# grid.arrange(VP[[1]], VP[[2]], ncol = 1, nrow = 2) #, VP[[2]], VP[[3]], VP[[4]], VP[[5]],
+# grid.arrange(VP[[3]], VP[[4]], ncol = 1, nrow = 2)
+# grid.arrange(VP[[5]], ncol = 1, nrow = 2)
 # grid.arrange(VP[[6]], VP[[7]], VP[[8]], VP[[9]], VP[[10]], ncol = 1, nrow = 5)
 # grid.arrange(VP[[11]], VP[[12]], VP[[13]], VP[[14]], VP[[15]], ncol = 1, nrow = 5)
 # grid.arrange(VP[[16]], VP[[17]], VP[[18]], VP[[19]], ncol = 1, nrow = 4)
 # grid.arrange(VP[[20]], VP[[21]], ncol = 1, nrow = 2)
 
-dev.off()
+# dev.off()
