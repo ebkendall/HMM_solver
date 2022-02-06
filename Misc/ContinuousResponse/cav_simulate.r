@@ -92,15 +92,14 @@ trueValues <- c(c(matrix(c(-2.29709805,  0.09266760, -0.56262135,
                          c(10, 20, 30, 40), #only three states
                          1) # needs to be just 1 sigma
 
-par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21, mu = 22:25, sigma = 26:29)
+par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21, mu = 22:25, sigma = 26)
 
 betaMat <- matrix(trueValues[par_index$beta], ncol = 3, byrow = F)
 
 
-errorMat_temp = matrix(c(1, exp(trueValues[par_index$misclass][1]), 0, 0,
-                         exp(trueValues[par_index$misclass][2]), 1, exp(trueValues[par_index$misclass][3]), 0,
-                         0, exp(trueValues[par_index$misclass][4]), 1, 0,
-                         0,   0,   0, 1), ncol=4, byrow=TRUE)
+errorMat_temp = matrix(c(1, exp(trueValues[par_index$misclass][1]), 0,
+                         exp(trueValues[par_index$misclass][2]), 1, exp(trueValues[par_index$misclass][3]),
+                         0, exp(trueValues[par_index$misclass][4]), 1), ncol=3, byrow=TRUE)
 
 errorMat = errorMat_temp / rowSums(errorMat_temp)
 
