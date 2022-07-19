@@ -1,37 +1,6 @@
-package.install = function(pack) {
-  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
+library(mvtnorm, quietly=T); library(foreach, quietly=T); library(doParallel, quietly=T)
 
-  # name of package to install / load
-  pack = pack
-
-  if (pack %in% rownames(installed.packages())) {
-    library(pack, character.only=T)
-  } else {
-    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    } else {
-      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    }
-  }
-}
-
-# This script contains the code for the mcmc and its helper functions
-
-package.install("mvtnorm")
-package.install("foreach")
-package.install("doParallel")
-package.install("msm")
-package.install("deSolve")
-package.install("expm")
-
-# library(mvtnorm, quietly=T)
-# library(foreach, quietly=T)
-# library(doParallel, quietly=T)
-#
-# library("msm")
-# library("deSolve")
-# library("expm")
+library("msm"); library("deSolve"); library("expm")
 
 Q <- function(t,x_ik,beta){
 
@@ -95,11 +64,11 @@ fn_log_post <- function(pars, prior_par, par_index, x, y, t, id, disc) {
 
 	val = 1; disc_t_i = NULL
 	y_i = y[id == i]                # the observed state
-    x_i = x[id == i,"sex",drop = F] # only the sex covariate
-    t_i = t[id == i]                # continuous time
+  x_i = x[id == i,"sex",drop = F] # only the sex covariate
+  t_i = t[id == i]                # continuous time
 
-    # If time is discretized for matrix exponential (disc = TRUE)
-    if(disc) { disc_t_i = x[id == i,"disc_time",drop = F] }
+  # If time is discretized for matrix exponential (disc = TRUE)
+  if(disc) { disc_t_i = x[id == i,"disc_time",drop = F] }
 
  	f_i = init %*% diag(resp_fnc[, y_i[1]])
 	log_norm = 0

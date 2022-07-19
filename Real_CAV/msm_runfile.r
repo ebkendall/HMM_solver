@@ -1,32 +1,16 @@
-package.install = function(pack) {
-  local({r <- getOption("repos");r["CRAN"] <- "http://cran.r-project.org"; options(repos=r)})
-
-  # name of package to install / load
-  pack = pack
-
-  if (pack %in% rownames(installed.packages())) {
-     library(pack, character.only=T)
-   } else {
-    if (pack %in% rownames(installed.packages(lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0'))) {
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    } else {
-      install.packages(pack, lib='/blue/jantonelli/emmett.kendall/Packages/R_4_0')
-      library(pack, lib.loc='/blue/jantonelli/emmett.kendall/Packages/R_4_0', character.only=T)
-    }
-  }
-}
-
-package.install("msm")
+library("msm")
 
 seedInd = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(seedInd)
 
-data_files <- c("Year", "YearTwo", "Month")
+data_files <- c("Year_msm", "YearTwo_msm", "Month_msm")
+data_names <- c('Data/cavData_year.rda', 
+				'Data/cavData_twoYear.rda', 
+				'Data/cavData_month.rda')
 
 for (folder in 1:3) {
 
-	Dir <- paste0("../DataGeneration/DataOut/", data_files[folder], "/")
-	load(paste0(Dir,'cavData',seedInd,'.rda'))
+	load(data_names[folder])
 
 	qmat <- matrix(c( 0,exp(-2),      0,exp(-2),
 	                  0,      0,exp(-2),exp(-2),
@@ -50,6 +34,6 @@ for (folder in 1:3) {
 					  ematrix=emat, initprobs=c(1, exp(-4.5), exp(-5), 0), est.initprobs=TRUE, deathexact=4, 
 					  censor=99, censor.states=1:3, method='BFGS', control=list(fnscale=4000, maxit=10000))   
 	
-	save(Output_msm,file=paste0('Model_out/msm/', data_files[folder] ,'/Output_msm',seedInd,'.rda'))
+	save(Output_msm,file=paste0('Model_out/', data_files[folder] ,'/Output_msm',seedInd,'.rda'))
 
 }
