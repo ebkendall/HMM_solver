@@ -11,9 +11,10 @@ args = commandArgs(TRUE)
 # num_seeds = 7 #args[1] # Only used in this script to locate and load files
 folder = as.numeric(args[1])
 
-model_name = c('deSolve', 'expm')
+model_name = c('deSolve', 'Year', 'YearTwo', 'Month')
 dir = paste0('Model_out/', model_name[folder], '/')
 simulation = T #as.logical(args[3]) # true or false
+trialNum = 1
 
 #data_names <- c(rep('orig',3), 'half', 'unhidden')
 
@@ -22,20 +23,20 @@ n_post = 5000
 # Step number at 3ich the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps =  20000
+steps =  30000
 # Matrix row indices for the posterior sample to use for GFF computation
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list(beta=1:10, misclass=11:14, pi_logit=15:16)
+par_index = list( beta=1:15, misclass=16:19, pi_logit=20:21)
 # par_index = list( beta=1:15, pi_logit=16:17)
 
-true_par = c(c(matrix(c(-2.54, -0.56,
-                        -2.94,  0.15,
-                        -1.10, -0.03,
-                        -3.92,  0.21,
-                        -2.12,  1.17), ncol=2, byrow=T)),
-            c(  -4.59512, -1.15268, -2.751535, -2.090741),
-            c( -3.178054, -4.59512))
+true_par = c(c(matrix(c(-3, 0, 0,
+                        -3, 0, 0,
+                        -3, 0, 0,
+                        -3, 0, 0,
+                        -3, 0, 0), ncol=3, byrow=T)),
+                  c(  -5, -5, -5, -5),
+                  c( -5, -5))
 
 
 labels <- c('b.l. S1 (well)   --->   S2 (mild)',
@@ -43,11 +44,11 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
             'b.l. S2 (mild)   --->   S3 (severe)',
             'b.l. S2 (mild)   --->   S4 (dead)',
             'b.l. S3 (severe)   --->   S4 (dead)',
-            # 'iyears State 1 (well)   --->   State 2 (mild)',
-            # 'iyears State 1 (well)   --->   State 4 (dead)',
-            # 'iyears State 2 (mild)   --->   State 3 (severe)',
-            # 'iyears State 2 (mild)   --->   State 4 (dead)',
-            # 'iyears State 3 (severe)   --->   State 4 (dead)',
+            'time State 1 (well)   --->   State 2 (mild)',
+            'time State 1 (well)   --->   State 4 (dead)',
+            'time State 2 (mild)   --->   State 3 (severe)',
+            'time State 2 (mild)   --->   State 4 (dead)',
+            'time State 3 (severe)   --->   State 4 (dead)',
             'sex S1 (well)   --->   S2 (mild)',
             'sex S1 (well)   --->   S4 (dead)',
             'sex S2 (mild)   --->   S3 (severe)',
@@ -63,12 +64,12 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = 1:50
+index_seeds = c(1:2,5,8:9)
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
 for(seed in index_seeds){
-  file_name = paste0(dir,'mcmc_out_',toString(seed),'.rda')
+  file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trialNum,'.rda')
 	if(file.exists(file_name)){
 	    load(file_name) # changed toString to 3
         ind = ind + 1
@@ -82,7 +83,7 @@ for(seed in index_seeds){
 # Plot and save the mcmc trace plots and histograms.
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, ncol(stacked_chains))
-pdf(paste0('Plots/mcmc_', model_name[folder], '.pdf'))
+pdf(paste0('Plots/mcmc_', model_name[folder], '_', trialNum, '.pdf'))
 par(mfrow=c(4, 2))
 VP <- vector(mode="list", length = length(labels))
 
@@ -102,27 +103,27 @@ for(r in 1:length(labels)){
 	      freq=F, xlab=paste0('Mean = ',toString(par_mean[r]),
 				                    ' Median = ',toString(par_median[r])))
 	abline( v=upper[r], col='red', lwd=2, lty=2)
-	abline( v=true_par[r], col='green', lwd=2, lty=2)
+	# abline( v=true_par[r], col='green', lwd=2, lty=2)
 	abline( v=lower[r], col='purple', lwd=2, lty=2)
 
   # Adding the boxplots
-  plot_df = data.frame(yVar = post_means[,r])
-  VP[[r]] = ggplot(plot_df, aes(x="", y = yVar)) +
-    geom_violin(trim=FALSE) +
-    geom_boxplot(width=0.1) +
-    ggtitle(labels[r]) +
-    ylab('') +
-    xlab(paste0("Parameter Value: ", true_par[r])) +
-    geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
-    theme(text = element_text(size = 7))
+  # plot_df = data.frame(yVar = post_means[,r])
+  # VP[[r]] = ggplot(plot_df, aes(x="", y = yVar)) +
+  #   geom_violin(trim=FALSE) +
+  #   geom_boxplot(width=0.1) +
+  #   ggtitle(labels[r]) +
+  #   ylab('') +
+  #   xlab(paste0("Parameter Value: ", true_par[r])) +
+  #   geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
+  #   theme(text = element_text(size = 7))
   #boxplot(post_means[,r], main=labels[r], ylab=NA, xlab = true_par[r])
   #abline(h=true_par[r], col="red")
 
 }
-grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
-             VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
-grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]],
-             VP[[14]], VP[[15]], VP[[16]], ncol=3, nrow =3)
+# grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
+#              VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
+# grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]],
+            #  VP[[14]], VP[[15]], VP[[16]], ncol=3, nrow =3)
 dev.off()
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -130,35 +131,35 @@ dev.off()
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-cred_set = vector(mode = 'list', length = length(true_par))
-for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
-                                                        'upper' = c(-1))
-ind = 0
+# cred_set = vector(mode = 'list', length = length(true_par))
+# for(i in 1:length(cred_set)) cred_set[[i]] = data.frame('lower' = c(-1),
+#                                                         'upper' = c(-1))
+# ind = 0
 
-for (i in 1:100) {
-    file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
-    if(file.exists(file_name)){
-	    load(file_name) # changed toString to 3
-        ind = ind + 1
+# for (i in 1:100) {
+#     file_name = paste0(dir,'mcmc_out_',toString(i),'.rda')
+#     if(file.exists(file_name)){
+# 	    load(file_name) # changed toString to 3
+#         ind = ind + 1
 
-        for(j in 1:length(true_par)) {
-            cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.025), 4)
-            cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
-                                        prob=.975), 4)
-        }
-  }
-}
+#         for(j in 1:length(true_par)) {
+#             cred_set[[j]][ind,1] =  round(quantile( mcmc_out$chain[index_post,j],
+#                                         prob=.025), 4)
+#             cred_set[[j]][ind,2] =  round(quantile( mcmc_out$chain[index_post,j],
+#                                         prob=.975), 4)
+#         }
+#   }
+# }
 
-save(cred_set, file = paste0('Plots/cred_set', model_name[folder], '.rda'))
+# save(cred_set, file = paste0('Plots/cred_set', model_name[folder], '.rda'))
 
-# -----------------------------------------------------------------------------
-# Calculating Coverage --------------------------------------------------------
-# -----------------------------------------------------------------------------
-for(i in 1:length(true_par)) {
-    val = true_par[i]
-    top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
-    bot = nrow(cred_set[[i]])
-    covrg = top/bot
-    print(paste0("Coverage for parameter ", val, " is: ", covrg))
-}
+# # -----------------------------------------------------------------------------
+# # Calculating Coverage --------------------------------------------------------
+# # -----------------------------------------------------------------------------
+# for(i in 1:length(true_par)) {
+#     val = true_par[i]
+#     top = length(which(cred_set[[i]]$lower <= val & val <= cred_set[[i]]$upper))
+#     bot = nrow(cred_set[[i]])
+#     covrg = top/bot
+#     print(paste0("Coverage for parameter ", val, " is: ", covrg))
+# }
