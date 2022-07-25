@@ -3,7 +3,7 @@ source("mcmc_routine.r")
 ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(ind)
 
-trialNum = 2
+trialNum = 3
 
 init_par = trueValues = c(c(matrix(c(-3, 0, 0,
                                      -3, 0, 0,
@@ -33,7 +33,7 @@ disc = F
 # Starting from the older MCMC chain -----------------------------------------
 n_post = 5000; steps2 = 30000
 index_post = (steps2 - burnin - n_post + 1):(steps2 - burnin)
-load(paste0('Model_out/deSolve/mcmc_out_', 5, '_', trialNum - 1,'.rda'))
+load(paste0('Model_out/deSolve/mcmc_out_', 1, '_', trialNum - 1,'.rda'))
 in_post_temp = tail(index_post, 300)
 par_temp = colMeans(mcmc_out$chain[in_post_temp,])
 rownames(par_temp) = NULL

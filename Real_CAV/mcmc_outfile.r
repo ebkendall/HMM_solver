@@ -14,12 +14,12 @@ folder = as.numeric(args[1])
 model_name = c('deSolve', 'Year', 'YearTwo', 'Month')
 dir = paste0('Model_out/', model_name[folder], '/')
 simulation = T #as.logical(args[3]) # true or false
-trialNum = 1
+trialNum = 2
 
 #data_names <- c(rep('orig',3), 'half', 'unhidden')
 
 # Size of posterior sample from mcmc chains
-n_post = 5000
+n_post = 10000
 # Step number at 3ich the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
@@ -64,7 +64,7 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = c(1:2,5,8:9)
+index_seeds = c(1,2,4)
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
