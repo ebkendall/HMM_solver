@@ -3,7 +3,7 @@ source("mcmc_routine.r")
 ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(ind)
 
-trialNum = 3
+trialNum = 4
 
 init_par = trueValues = c(c(matrix(c(-3, 0, 0,
                                      -3, 0, 0,

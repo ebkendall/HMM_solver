@@ -14,7 +14,7 @@ folder = as.numeric(args[1])
 model_name = c('deSolve', 'Year', 'YearTwo', 'Month')
 dir = paste0('Model_out/', model_name[folder], '/')
 simulation = T #as.logical(args[3]) # true or false
-trialNum = 2
+trialNum = 4
 
 #data_names <- c(rep('orig',3), 'half', 'unhidden')
 
@@ -64,7 +64,7 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = c(1,2,4)
+index_seeds = c(1:6,8:10)
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
