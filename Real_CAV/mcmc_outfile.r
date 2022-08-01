@@ -19,7 +19,7 @@ trialNum = 4
 #data_names <- c(rep('orig',3), 'half', 'unhidden')
 
 # Size of posterior sample from mcmc chains
-n_post = 10000
+n_post = 15000
 # Step number at 3ich the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
@@ -64,7 +64,7 @@ labels <- c('b.l. S1 (well)   --->   S2 (mild)',
 # Create mcmc trace plots and histograms
 # -----------------------------------------------------------------------------
 
-index_seeds = c(1:6,8:10)
+index_seeds = c(1:10)
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 chain_list <- NULL
 ind = 0
@@ -76,8 +76,14 @@ for(seed in index_seeds){
         print(mcmc_out$accept)
 
       	chain_list[[ind]] = mcmc_out$chain[index_post,]
-    	post_means[ind,] <- colMeans(mcmc_out$chain[index_post,])
+    	  post_means[ind,] <- colMeans(mcmc_out$chain[index_post,])
   }
+}
+
+# Thin the trace plots slightly
+for(w in 1:length(chain_list)) {
+    ind_keep = seq(1, nrow(chain_list[[w]]), by=10)
+    chain_list[[w]] = chain_list[[w]][ind_keep, ]
 }
 
 # Plot and save the mcmc trace plots and histograms.
@@ -89,7 +95,7 @@ VP <- vector(mode="list", length = length(labels))
 
 for(r in 1:length(labels)){
 
-	plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,length(index_post)),
+	plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
 		    ylim=range(stacked_chains[,r]) )
 
 	for(seed in 1:length(chain_list)) lines( chain_list[[seed]][,r], type='l', col=seed)
@@ -98,6 +104,7 @@ for(r in 1:length(labels)){
 	par_median[r] = round( median(stacked_chains[,r]), 4)
 	upper[r] = round( quantile( stacked_chains[,r], prob=.975), 4)
 	lower[r] = round( quantile( stacked_chains[,r], prob=.025), 4)
+  print(paste(labels[r], ": [", lower[r], ", ", upper[r], "]"))
 
 	hist( stacked_chains[,r], breaks=sqrt(nrow(stacked_chains)), ylab=NA, main=NA,
 	      freq=F, xlab=paste0('Mean = ',toString(par_mean[r]),

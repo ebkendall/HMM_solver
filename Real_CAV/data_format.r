@@ -14,12 +14,17 @@ new_data_gen <- function(d, dat_fr) {
         
         #------------------------------------
         censoredAges <- seq(0, max(subject$years), d)  
+        yrs_round = round(subject$years, digits = 5)
+        disc_round = round(subject$disc_time, digits = 5)
         for(t in censoredAges){
             tempRow = NULL
-            d_floor_t = t - (t %% d)
-            # If 't' corresponds to an observed age, then the next row will include the observed clinical visit data.
-            if(t %in% subject$years){	
-                current <- rbind( current, subject[subject$disc_time==d_floor_t,]) 
+
+            t_round = round(t, digits = 5)
+
+            # If 't' corresponds to an observed age, then the next row will 
+            # include the observed clinical visit data.
+            if(t_round %in% yrs_round){	
+                current <- rbind( current, subject[subject$disc_time==t_round,]) 
             } else{
             
                 # Create a CENSORED row for each subject at each INTEGER year of years.
@@ -32,8 +37,11 @@ new_data_gen <- function(d, dat_fr) {
                 
                 current <- rbind( current, tempRow)
                 
-                # If 't' corresponds to an observed INTEGER years, then the subject was observed some time during this years.  According, the next row will include the observed clinical visit data.  Recall that integer years is simply the floor(years).
-                if(t %in% subject$disc_time){ current <- rbind( current, subject[subject$disc_time==d_floor_t,]) }
+                # If 't' corresponds to an observed INTEGER years, then the 
+                # subject was observed some time during this years.  According, 
+                # the next row will include the observed clinical visit data.  
+                # Recall that integer years is simply the floor(years).
+                if(t_round %in% disc_round){ current <- rbind( current, subject[disc_round==t_round,]) }
             }
 
         }

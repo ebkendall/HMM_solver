@@ -10,6 +10,8 @@ data_names <- c('Data/cavData_year.rda',
 
 for (folder in 1:3) {
 
+	print(folder)
+
 	load(data_names[folder])
 
 	qmat <- matrix(c( 0,exp(-2),      0,exp(-2),
